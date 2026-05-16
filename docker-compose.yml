@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: fanesis-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fanesis
+      POSTGRES_PASSWORD: fanesis_password
+      POSTGRES_DB: fanesis
+    ports:
+      - "5432:5432"
+    volumes:
+      - fanesis_pgdata:/var/lib/postgresql/data
+      # 최초 기동 시 자동으로 스키마 적용 (선택)
+      - ./db/init:/docker-entrypoint-initdb.d
+
+volumes:
+  fanesis_pgdata:
