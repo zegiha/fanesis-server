@@ -3,6 +3,9 @@ import { GoogleAuthService } from './google-auth.service';
 import { JwtTokenService } from './jwt-token.service';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { Users } from '../../generated/prisma/client';
+import { AuthResponseDto } from './dto/response/auth-response.dto';
+import { RefreshResponseDto } from './dto/response/refresh-response.dto';
+import { UserResponseDto } from './dto/response/user-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +15,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async loginWithGoogle(idToken: string) {
+  async loginWithGoogle(idToken: string): Promise<AuthResponseDto> {
     const g = await this.googleTokenService.verify(idToken);
 
     const { user } = await this.prisma.$transaction(async (tx) => {
@@ -61,10 +64,10 @@ export class AuthService {
 
     // 3. 트랜잭션 밖에서 자체 JWT 발급 (DB 작업 아니므로 분리)
     const tokens = await this.issueTokens(user);
-    return { user, ...tokens };
+    return { user: UserResponseDto.fromEntity(user), ...tokens };
   }
 
-  async refreshTokens(refreshToken: string) {
+  async refreshTokens(refreshToken: string): Promise<RefreshResponseDto> {
     const { sub } = await this.jwtTokenService.verifyRefreshToken(refreshToken);
     const accessToken = await this.jwtTokenService.issueAccessToken(sub);
     return { accessToken };
