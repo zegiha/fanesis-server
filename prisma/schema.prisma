@@ -1,65 +1,26 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-enum Language {
-  ko
-  en
-}
-
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Users {
-  uuid String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email String?
-  displayName String? @map("display_name")
-
+  uuid            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String?
+  displayName     String?           @map("display_name")
+  language        Language
+  timezone        String
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?         @map("deleted_at") @db.Timestamptz(6)
   oauthIdentities OAuthIdentities[]
 
-  language Language
-  timezone String
-
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz
-
   @@map("users")
-}
-
-// CREATE TABLE users (
-//   uuid          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-//   email         TEXT,
-//   display_name  TEXT,
-  
-//   -- 설정
-//   language      TEXT NOT NULL DEFAULT 'ko' CHECK (language IN ('ko', 'en', 'ja')),
-//   timezone      TEXT NOT NULL DEFAULT 'Asia/Seoul',  -- IANA timezone name
-  
-//   -- 메타
-//   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-//   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-//   deleted_at    TIMESTAMPTZ,                         -- soft delete
-  
-//   CONSTRAINT email_format CHECK (
-//     email IS NULL OR email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'
-//   )
-// );
-
-// -- 활성 사용자에 대해서만 이메일 유니크 (탈퇴 후 재가입 허용)
-// CREATE UNIQUE INDEX idx_users_email_active ON users(lower(email)) 
-// WHERE email IS NOT NULL AND deleted_at IS NULL;
-
-enum OAuthProvider {
-  google
-  apple
 }
 
 model OAuthIdentities {
@@ -68,10 +29,8 @@ model OAuthIdentities {
   provider       OAuthProvider
   providerUserId String        @map("provider_user_id")
   providerEmail  String?       @map("provider_email")
-  createdAt      DateTime      @default(now()) @map("created_at")  @db.Timestamptz
-  lastUsedAt     DateTime      @default(now()) @map("last_used_at") @db.Timestamptz
-
-
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt     DateTime      @default(now()) @map("last_used_at") @db.Timestamptz(6)
   user           Users         @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
 
   @@unique([provider, providerUserId])
@@ -80,25 +39,12 @@ model OAuthIdentities {
   @@map("oauth_identities")
 }
 
-// CREATE DOMAIN oauth_provider AS TEXT
-//   CHECK (VALUE IN ('google', 'apple'));
+enum Language {
+  ko
+  en
+}
 
-// CREATE TABLE oauth_identities (
-//   uuid              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-//   user_uuid         UUID NOT NULL REFERENCES users(uuid) ON DELETE CASCADE,
-  
-//   provider          oauth_provider NOT NULL,
-//   provider_user_id  TEXT NOT NULL,        -- Google 'sub', Apple 'sub'
-//   provider_email    TEXT,                 -- provider 측 이메일 (변경될 수 있음)
-  
-//   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-//   last_used_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  
-//   -- 한 provider의 한 user_id는 유일
-//   UNIQUE (provider, provider_user_id),
-  
-//   -- 한 user가 같은 provider 두 번 연결 못 함
-//   UNIQUE (user_uuid, provider)
-// );
-
-// CREATE INDEX idx_oauth_user ON oauth_identities(user_uuid);
+enum OAuthProvider {
+  google
+  apple
+}
