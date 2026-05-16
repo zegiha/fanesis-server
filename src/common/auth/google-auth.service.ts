@@ -1,15 +1,22 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
+import googleConfig from '@/config/google.config';
 
 @Injectable()
 export class GoogleAuthService {
   private client = new OAuth2Client();
 
+  constructor(
+    @Inject(googleConfig.KEY)
+    private readonly googleCfg: ConfigType<typeof googleConfig>,
+  ) {}
+
   async verify(idToken: string) {
     const ticket = await this.client.verifyIdToken({
       idToken,
       audience: [
-        process.env.GOOGLE_IOS_CLIENT_ID!,
+        this.googleCfg.iosClientId,
         // 추후 web client id도 쓰면 여기 배열에 추가
       ],
     });
