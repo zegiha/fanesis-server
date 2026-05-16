@@ -1,0 +1,16 @@
+/**
+ * 프로젝트 전역 에러 코드 카탈로그.
+ * 새 에러를 추가할 때는 이 파일에 코드를 먼저 등록하고,
+ * 도메인별 예외 파일에서 해당 코드를 참조해 클래스를 정의한다.
+ */
+export const ErrorCode = {
+  // Auth
+  AUTH_INVALID_GOOGLE_TOKEN: 'AUTH_INVALID_GOOGLE_TOKEN',
+  AUTH_INVALID_TOKEN_TYPE: 'AUTH_INVALID_TOKEN_TYPE',
+  AUTH_INVALID_REFRESH_TOKEN: 'AUTH_INVALID_REFRESH_TOKEN',
+
+  // Common
+  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+} as const;
+
+export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
