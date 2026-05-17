@@ -9,6 +9,7 @@ import googleConfig from './core/config/google.config';
 import jwtConfig from './core/config/jwt.config';
 import { validate } from './core/config/env.validation';
 import { PrismaModule } from './core/prisma/prisma.module';
+import { TaskModule } from './domain/task/task.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
     }),
     PrismaModule,
     AuthModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],
