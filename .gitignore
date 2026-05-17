@@ -34,7 +34,7 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-fanesis.code-workspace
+fanesis-server.code-workspace
 
 # dotenv environment variable files
 .env
