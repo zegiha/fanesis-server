@@ -19,8 +19,49 @@ model Users {
   updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt       DateTime?         @map("deleted_at") @db.Timestamptz(6)
   oauthIdentities OAuthIdentities[]
+  folders         Folders[]
+  tasks           Tasks[]
 
   @@map("users")
+}
+
+model Folders {
+  uuid      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid  String          @map("user_uuid") @db.Uuid
+  name      String
+  color     AccentColorKey
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      Users           @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  tasks     Tasks[]
+
+  @@index([userUuid], map: "idx_folders_user")
+  @@map("folders")
+}
+
+model Tasks {
+  uuid            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid        String              @map("user_uuid") @db.Uuid
+  title           String
+  priority        TaskPriority?
+  affiliation     TaskAffiliation?
+  backlogKind     TaskBacklogKind     @map("backlog_kind")
+  backlogFolderId String?             @map("backlog_folder_id") @db.Uuid
+  activeKind      TaskActiveKind?     @map("active_kind")
+  timeboxKind     TaskTimeboxKind?    @map("timebox_kind")
+  scheduledDate   DateTime?           @map("scheduled_date") @db.Date
+  startTime       DateTime?           @map("start_time") @db.Time(6)
+  durationSec     Int?                @map("duration_sec")
+  chunkSec        Int?                @map("chunk_sec")
+  breakSec        Int?                @map("break_sec")
+  doneDate        DateTime?           @map("done_date") @db.Timestamptz(6)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user            Users               @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  backlogFolder   Folders?            @relation(fields: [backlogFolderId], references: [uuid], onDelete: SetNull)
+
+  @@index([userUuid], map: "idx_tasks_user")
+  @@map("tasks")
 }
 
 model OAuthIdentities {
@@ -47,4 +88,38 @@ enum Language {
 enum OAuthProvider {
   google
   apple
+}
+
+enum AccentColorKey {
+  red
+  orange
+  yellow
+  green
+  blue
+  violet
+  gray
+}
+
+enum TaskPriority {
+  high
+  medium
+  low
+}
+
+enum TaskBacklogKind {
+  inbox
+  folder
+}
+
+enum TaskActiveKind {
+  todo
+  big3
+}
+
+enum TaskTimeboxKind {
+  timeline
+}
+
+enum TaskAffiliation {
+  google
 }
