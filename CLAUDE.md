@@ -28,7 +28,7 @@
 
 ```
 src/
-├── core/      # 인프라/공용: auth, database(Prisma), cache(Redis), storage(R2), queue(BullMQ), config
+├── core/      # 인프라/공용: auth, prisma, cache(Redis), storage(R2), queue(BullMQ), config
 ├── domain/    # 핵심 데이터 모델: task, routine, folder, canvas, user
 ├── features/  # 도메인을 활용하는 기능: ocr, focus, calendar-link, push-notification, payment
 └── common/    # DTO 베이스, 필터, 인터셉터, 데코레이터, 예외
