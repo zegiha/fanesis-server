@@ -34,6 +34,7 @@ async function bootstrap() {
       'access-token',
     )
     .addTag('auth', '인증 / 토큰 관련 엔드포인트')
+    .addTag('folder', '폴더 CRUD 엔드포인트')
     .addTag('task', '태스크 CRUD 엔드포인트')
     .addTag('app', '서버 상태 / 공용 엔드포인트')
     .build();

@@ -67,12 +67,12 @@ describe('tasks (integration)', () => {
     ).rejects.toThrow();
   });
 
-  it('resets tasks to inbox when their folder is deleted (trigger)', async () => {
+  it('forbids raw delete of a folder that still has tasks attached (CHECK safety net)', async () => {
     const user = await createUser();
     const folder = await prisma.folders.create({
       data: { userUuid: user.uuid, name: 'work', color: 'blue' },
     });
-    const task = await prisma.tasks.create({
+    await prisma.tasks.create({
       data: {
         userUuid: user.uuid,
         title: 'X',
@@ -81,13 +81,11 @@ describe('tasks (integration)', () => {
       },
     });
 
-    await prisma.folders.delete({ where: { uuid: folder.uuid } });
-
-    const refreshed = await prisma.tasks.findUnique({
-      where: { uuid: task.uuid },
-    });
-    expect(refreshed?.backlogKind).toBe('inbox');
-    expect(refreshed?.backlogFolderId).toBeNull();
+    // trigger 제거 후, FK ON DELETE SET NULL이 backlog_folder_id를 NULL로 만들지만
+    // backlog_kind='folder'는 그대로라 backlog_folder_consistency CHECK가 막아준다.
+    await expect(
+      prisma.folders.delete({ where: { uuid: folder.uuid } }),
+    ).rejects.toThrow();
   });
 
   it('rejects duplicate folder name (case-insensitive) per user', async () => {
