@@ -1,7 +1,11 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import jwtConfig from '@/config/jwt.config';
+import {
+  InvalidRefreshTokenException,
+  InvalidTokenTypeException,
+} from '../exceptions/auth.exceptions';
 
 type AccessPayload = { sub: string; type: 'access' };
 type RefreshPayload = { sub: string; type: 'refresh' };
@@ -36,11 +40,12 @@ export class JwtTokenService {
         secret: this.jwtCfg.refreshSecret,
       });
       if (payload.type !== 'refresh') {
-        throw new UnauthorizedException('Invalid token type');
+        throw new InvalidTokenTypeException();
       }
       return { sub: payload.sub };
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+    } catch (err) {
+      if (err instanceof InvalidTokenTypeException) throw err;
+      throw new InvalidRefreshTokenException();
     }
   }
 }

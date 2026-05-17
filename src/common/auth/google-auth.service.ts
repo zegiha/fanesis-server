@@ -1,12 +1,8 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { OAuth2Client, type LoginTicket } from 'google-auth-library';
 import googleConfig from '@/config/google.config';
+import { InvalidGoogleTokenException } from '../exceptions/auth.exceptions';
 
 @Injectable()
 export class GoogleAuthService {
@@ -32,12 +28,12 @@ export class GoogleAuthService {
       this.logger.warn(
         `Google id_token verification failed: ${(err as Error).message}`,
       );
-      throw new UnauthorizedException('Invalid Google token');
+      throw new InvalidGoogleTokenException();
     }
 
     const payload = ticket.getPayload();
     if (!payload || !payload.sub) {
-      throw new UnauthorizedException('Invalid Google token');
+      throw new InvalidGoogleTokenException();
     }
 
     return {

@@ -43,7 +43,9 @@ export class AuthController {
     description: '재발급 성공',
     type: RefreshResponseDto,
   })
-  @ApiUnauthorizedResponse({ description: '만료되었거나 유효하지 않은 Refresh Token' })
+  @ApiUnauthorizedResponse({
+    description: '만료되었거나 유효하지 않은 Refresh Token',
+  })
   refresh(@Body() dto: RefreshDto): Promise<RefreshResponseDto> {
     return this.auth.refreshTokens(dto.refreshToken);
   }
