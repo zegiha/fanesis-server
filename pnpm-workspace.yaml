@@ -2,8 +2,8 @@ allowBuilds:
   '@nestjs/core': true
   '@prisma/engines': true
   '@scarf/scarf': true
-  cpu-features: set this to true or false
+  cpu-features: true
   prisma: true
-  protobufjs: set this to true or false
-  ssh2: set this to true or false
+  protobufjs: true
+  ssh2: true
   unrs-resolver: true
