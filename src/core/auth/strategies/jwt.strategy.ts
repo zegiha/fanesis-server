@@ -2,8 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import jwtConfig from '@/config/jwt.config';
-import { InvalidTokenTypeException } from '../../exceptions/auth.exceptions';
+import jwtConfig from '@/core/config/jwt.config';
+import { InvalidTokenTypeException } from '../../../common/exceptions/auth.exceptions';
 
 type AccessPayload = { sub: string; type: 'access' };
 

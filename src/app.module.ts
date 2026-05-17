@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './common/auth/auth.module';
-import appConfig from './config/app.config';
-import databaseConfig from './config/database.config';
-import googleConfig from './config/google.config';
-import jwtConfig from './config/jwt.config';
-import { validate } from './config/env.validation';
+import { AuthModule } from './core/auth/auth.module';
+import appConfig from './core/config/app.config';
+import databaseConfig from './core/config/database.config';
+import googleConfig from './core/config/google.config';
+import jwtConfig from './core/config/jwt.config';
+import { validate } from './core/config/env.validation';
 import { PrismaModule } from './core/prisma/prisma.module';
 
 @Module({

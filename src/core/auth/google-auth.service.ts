@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { OAuth2Client, type LoginTicket } from 'google-auth-library';
-import googleConfig from '@/config/google.config';
-import { InvalidGoogleTokenException } from '../exceptions/auth.exceptions';
+import googleConfig from '@/core/config/google.config';
+import { InvalidGoogleTokenException } from './../../common/exceptions/auth.exceptions';
 
 @Injectable()
 export class GoogleAuthService {

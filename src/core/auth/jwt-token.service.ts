@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import jwtConfig from '@/config/jwt.config';
+import jwtConfig from '@/core/config/jwt.config';
 import {
   InvalidRefreshTokenException,
   InvalidTokenTypeException,
-} from '../exceptions/auth.exceptions';
+} from '../../common/exceptions/auth.exceptions';
 
 type AccessPayload = { sub: string; type: 'access' };
 type RefreshPayload = { sub: string; type: 'refresh' };
