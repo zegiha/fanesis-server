@@ -59,3 +59,11 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /src/generated/prisma
+
+# Claude Code workflow state (local only)
+.claude/state.json
+.claude/worktrees/.active
+.claude/worktrees/HANDOFF.md
+.claude/worktrees/*/HANDOFF.md
+.claude/HANDOFF.md
+.claude/settings.local.json
