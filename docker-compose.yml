@@ -14,5 +14,21 @@ services:
       # 최초 기동 시 자동으로 스키마 적용 (선택)
       - ./db/init:/docker-entrypoint-initdb.d
 
+  redis:
+    image: redis:7-alpine
+    container_name: fanesis-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - fanesis_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   fanesis_pgdata:
+  fanesis_redisdata:

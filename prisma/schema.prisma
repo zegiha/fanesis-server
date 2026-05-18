@@ -10,17 +10,18 @@ datasource db {
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Users {
-  uuid            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email           String?
-  displayName     String?           @map("display_name")
-  language        Language
-  timezone        String
-  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime?         @map("deleted_at") @db.Timestamptz(6)
-  oauthIdentities OAuthIdentities[]
-  folders         Folders[]
-  tasks           Tasks[]
+  uuid                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String?
+  displayName          String?                @map("display_name")
+  language             Language
+  timezone             String
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt            DateTime?              @map("deleted_at") @db.Timestamptz(6)
+  oauthIdentities      OAuthIdentities[]
+  folders              Folders[]
+  tasks                Tasks[]
+  calendarIntegrations CalendarIntegrations[]
 
   @@map("users")
 }
@@ -59,9 +60,69 @@ model Tasks {
   updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   user            Users               @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   backlogFolder   Folders?            @relation(fields: [backlogFolderId], references: [uuid], onDelete: SetNull)
+  externalLink    TaskExternalLinks?
 
   @@index([userUuid], map: "idx_tasks_user")
   @@map("tasks")
+}
+
+model CalendarIntegrations {
+  uuid                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid               String                   @map("user_uuid") @db.Uuid
+  provider               CalendarProvider
+  providerAccountId      String                   @map("provider_account_id")
+  providerEmail          String                   @map("provider_email")
+  accessTokenEncrypted   String                   @map("access_token_encrypted")
+  refreshTokenEncrypted  String                   @map("refresh_token_encrypted")
+  tokenExpiresAt         DateTime                 @map("token_expires_at") @db.Timestamptz(6)
+  isActive               Boolean                  @default(true) @map("is_active")
+  createdAt              DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                   Users                    @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  syncedCalendars        CalendarSyncedCalendars[]
+
+  @@unique([userUuid, provider, providerAccountId])
+  @@index([userUuid], map: "idx_calendar_integrations_user")
+  @@map("calendar_integrations")
+}
+
+model CalendarSyncedCalendars {
+  uuid                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationUuid     String               @map("integration_uuid") @db.Uuid
+  externalCalendarId  String               @map("external_calendar_id")
+  summary             String?
+  syncToken           String?              @map("sync_token")
+  lastSyncedAt        DateTime?            @map("last_synced_at") @db.Timestamptz(6)
+  webhookChannelId    String?              @unique @map("webhook_channel_id")
+  webhookResourceId   String?              @map("webhook_resource_id")
+  webhookExpiresAt    DateTime?            @map("webhook_expires_at") @db.Timestamptz(6)
+  isActive            Boolean              @default(true) @map("is_active")
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  integration         CalendarIntegrations @relation(fields: [integrationUuid], references: [uuid], onDelete: Cascade)
+  taskLinks           TaskExternalLinks[]
+
+  @@unique([integrationUuid, externalCalendarId])
+  @@index([integrationUuid], map: "idx_synced_calendars_integration")
+  @@map("calendar_synced_calendars")
+}
+
+model TaskExternalLinks {
+  taskUuid           String                  @id @map("task_uuid") @db.Uuid
+  syncedCalendarUuid String                  @map("synced_calendar_uuid") @db.Uuid
+  externalEventId    String                  @map("external_event_id")
+  externalEtag       String?                 @map("external_etag")
+  lastSyncedAt       DateTime                @default(now()) @map("last_synced_at") @db.Timestamptz(6)
+  task               Tasks                   @relation(fields: [taskUuid], references: [uuid], onDelete: Cascade)
+  syncedCalendar     CalendarSyncedCalendars @relation(fields: [syncedCalendarUuid], references: [uuid], onDelete: Cascade)
+
+  @@unique([syncedCalendarUuid, externalEventId])
+  @@index([syncedCalendarUuid], map: "idx_task_external_links_calendar")
+  @@map("task_external_links")
+}
+
+enum CalendarProvider {
+  google
 }
 
 model OAuthIdentities {

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@/core/prisma/prisma.service';
 import {
   CreateTaskDto,
@@ -49,6 +50,7 @@ describe('TaskService (unit)', () => {
             folders: { findUnique: foldersFindUnique },
           },
         },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 

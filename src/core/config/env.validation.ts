@@ -38,6 +38,40 @@ class EnvironmentVariables {
   @IsString()
   @MinLength(1)
   GOOGLE_IOS_CLIENT_ID!: string;
+
+  // Google Calendar OAuth (web client - separate from iOS sign-in)
+  @IsString()
+  @IsOptional()
+  GOOGLE_CALENDAR_CLIENT_ID: string = '';
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CALENDAR_CLIENT_SECRET: string = '';
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CALENDAR_REDIRECT_URI: string = '';
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CALENDAR_WEBHOOK_BASE_URL: string = '';
+
+  @IsString()
+  @IsOptional()
+  MOBILE_DEEP_LINK_CALENDAR_SUCCESS: string = '';
+
+  @IsString()
+  @IsOptional()
+  MOBILE_DEEP_LINK_CALENDAR_FAILURE: string = '';
+
+  // AES-256-GCM key, base64-encoded 32 bytes
+  @IsString()
+  @IsOptional()
+  ENCRYPTION_KEY: string = '';
+
+  @IsString()
+  @IsOptional()
+  REDIS_URL: string = '';
 }
 
 export function validate(config: Record<string, unknown>) {
