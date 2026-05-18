@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '@/core/prisma/prisma.service';
 import { Prisma, Tasks } from '@/generated/prisma/client';
+import { TASK_UPDATED_EVENT, type TaskUpdatedEvent } from './task.events';
 import {
   CreateTaskDto,
   TaskActiveKindDto,
@@ -30,7 +32,10 @@ type TaskState = {
 
 @Injectable()
 export class TaskService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly events: EventEmitter2,
+  ) {}
 
   async create(userUuid: string, dto: CreateTaskDto): Promise<Tasks> {
     this.validateState(dto);
@@ -167,7 +172,20 @@ export class TaskService {
     if (dto.chunkSec !== undefined) data.chunkSec = dto.chunkSec;
     if (dto.breakSec !== undefined) data.breakSec = dto.breakSec;
 
-    return this.prisma.tasks.update({ where: { uuid: taskUuid }, data });
+    const updated = await this.prisma.tasks.update({
+      where: { uuid: taskUuid },
+      data,
+    });
+    this.events.emit(TASK_UPDATED_EVENT, {
+      before: {
+        scheduledDate: current.scheduledDate,
+        startTime: current.startTime,
+        durationSec: current.durationSec,
+        affiliation: current.affiliation,
+      },
+      after: updated,
+    } satisfies TaskUpdatedEvent);
+    return updated;
   }
 
   async remove(userUuid: string, taskUuid: string): Promise<void> {
