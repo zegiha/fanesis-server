@@ -11,6 +11,10 @@ import {
   IncrementalSyncJobData,
 } from '../queue/queue.constants';
 
+export const LOOKBACK_DAYS = 7;
+export const LOOKAHEAD_DAYS = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Maps Google Calendar events ↔ Fanesis tasks. Handles initial + incremental sync,
  * upsert / delete, and feedback-loop suppression (no-op update when values already match).
@@ -42,11 +46,16 @@ export class GoogleSyncService {
     }
 
     const startToken = fullResync ? null : sc.syncToken;
+    const now = Date.now();
     const { events, nextSyncToken, expiredSyncToken } =
       await this.api.listEvents(
         sc.integration,
         sc.externalCalendarId,
         startToken,
+        {
+          timeMin: new Date(now - LOOKBACK_DAYS * DAY_MS),
+          timeMax: new Date(now + LOOKAHEAD_DAYS * DAY_MS),
+        },
       );
 
     this.logger.log(

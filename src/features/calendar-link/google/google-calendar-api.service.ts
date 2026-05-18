@@ -13,6 +13,12 @@ const TOKEN_REFRESH_LEEWAY_MS = 60_000;
 // Google channel max ttl = 30 days; we request 7 days to keep renewal cadence comfortable.
 const CHANNEL_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+export interface ListEventsOptions {
+  /** Full sync 시에만 적용. Incremental sync(syncToken 존재)에서는 무시됨 — Google API 제약. */
+  timeMin?: Date;
+  timeMax?: Date;
+}
+
 @Injectable()
 export class GoogleCalendarApiService {
   private readonly logger = new Logger(GoogleCalendarApiService.name);
@@ -47,6 +53,7 @@ export class GoogleCalendarApiService {
     integration: CalendarIntegrations,
     externalCalendarId: string,
     syncToken: string | null,
+    options: ListEventsOptions = {},
   ): Promise<{
     events: calendar_v3.Schema$Event[];
     nextSyncToken: string | null;
@@ -56,16 +63,25 @@ export class GoogleCalendarApiService {
     const all: calendar_v3.Schema$Event[] = [];
     let pageToken: string | undefined;
     let nextSyncToken: string | null = null;
+    const isIncremental = !!syncToken;
     try {
       do {
-        const res = await client.events.list({
+        const baseParams: calendar_v3.Params$Resource$Events$List = {
           calendarId: externalCalendarId,
           maxResults: 250,
           singleEvents: true,
-          showDeleted: !!syncToken, // incremental sync must show deletes
+          showDeleted: isIncremental,
+          eventTypes: ['default'],
           pageToken,
-          syncToken: syncToken ?? undefined,
-        });
+        };
+        const params: calendar_v3.Params$Resource$Events$List = isIncremental
+          ? { ...baseParams, syncToken: syncToken ?? undefined }
+          : {
+              ...baseParams,
+              timeMin: options.timeMin?.toISOString(),
+              timeMax: options.timeMax?.toISOString(),
+            };
+        const res = await client.events.list(params);
         for (const ev of res.data.items ?? []) all.push(ev);
         pageToken = res.data.nextPageToken ?? undefined;
         nextSyncToken = res.data.nextSyncToken ?? nextSyncToken;

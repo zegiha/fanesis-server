@@ -1,4 +1,12 @@
-import { mapEventToTaskFields } from './google-sync.service';
+import type { Queue } from 'bullmq';
+import { PrismaService } from '@/core/prisma/prisma.service';
+import {
+  GoogleSyncService,
+  LOOKAHEAD_DAYS,
+  LOOKBACK_DAYS,
+  mapEventToTaskFields,
+} from './google-sync.service';
+import { GoogleCalendarApiService } from './google-calendar-api.service';
 
 describe('mapEventToTaskFields (unit)', () => {
   it('maps a timed event to scheduledDate + startTime + durationSec', () => {
@@ -40,5 +48,53 @@ describe('mapEventToTaskFields (unit)', () => {
 
   it('returns null when start is absent', () => {
     expect(mapEventToTaskFields({ id: 'e4', summary: 'x' })).toBeNull();
+  });
+});
+
+describe('GoogleSyncService.sync — time window forwarded to listEvents (unit)', () => {
+  it('forwards a (now - LOOKBACK_DAYS, now + LOOKAHEAD_DAYS) window to listEvents on full resync', async () => {
+    const listEvents = jest.fn().mockResolvedValue({
+      events: [],
+      nextSyncToken: 'tok',
+      expiredSyncToken: false,
+    });
+    const update = jest.fn();
+    const findUnique = jest.fn().mockResolvedValue({
+      uuid: 'sc1',
+      isActive: true,
+      externalCalendarId: 'primary',
+      syncToken: null,
+      integration: { uuid: 'i1', userUuid: 'u1' },
+    });
+    const prisma = {
+      calendarSyncedCalendars: { findUnique, update },
+    } as unknown as PrismaService;
+    const api = { listEvents } as unknown as GoogleCalendarApiService;
+    const queue = { add: jest.fn() } as unknown as Queue;
+    const svc = new GoogleSyncService(prisma, api, queue);
+
+    const before = Date.now();
+    await svc.sync('sc1', true);
+    const after = Date.now();
+
+    expect(listEvents).toHaveBeenCalledTimes(1);
+    const calls = listEvents.mock.calls as unknown as unknown[][];
+    const opts = calls[0][3] as { timeMin: Date; timeMax: Date };
+    const dayMs = 24 * 60 * 60 * 1000;
+    expect(opts.timeMin.getTime()).toBeGreaterThanOrEqual(
+      before - LOOKBACK_DAYS * dayMs,
+    );
+    expect(opts.timeMin.getTime()).toBeLessThanOrEqual(
+      after - LOOKBACK_DAYS * dayMs,
+    );
+    expect(opts.timeMax.getTime()).toBeGreaterThanOrEqual(
+      before + LOOKAHEAD_DAYS * dayMs,
+    );
+    expect(opts.timeMax.getTime()).toBeLessThanOrEqual(
+      after + LOOKAHEAD_DAYS * dayMs,
+    );
+    // 윈도우 크기 자체도 검증
+    const windowMs = opts.timeMax.getTime() - opts.timeMin.getTime();
+    expect(windowMs).toBe((LOOKBACK_DAYS + LOOKAHEAD_DAYS) * dayMs);
   });
 });

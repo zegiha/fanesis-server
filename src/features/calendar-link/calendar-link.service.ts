@@ -14,6 +14,7 @@ import {
 } from './calendar-link.exceptions';
 import { GoogleCalendarApiService } from './google/google-calendar-api.service';
 import { GoogleOauthService } from './google/google-oauth.service';
+import { isSystemCalendarId } from './google/system-calendar-filter';
 import {
   CALENDAR_LINK_QUEUE,
   CalendarLinkJob,
@@ -102,6 +103,7 @@ export class CalendarLinkService {
 
     return items
       .filter((c) => c.id)
+      .filter((c) => !isSystemCalendarId(c.id!))
       .map((c) => ({
         externalCalendarId: c.id!,
         summary: c.summaryOverride ?? c.summary ?? c.id!,
@@ -121,6 +123,12 @@ export class CalendarLinkService {
     const results: CalendarSyncedCalendars[] = [];
 
     for (const externalCalendarId of externalCalendarIds) {
+      if (isSystemCalendarId(externalCalendarId)) {
+        this.logger.warn(
+          `skip subscribe to system calendar: ${externalCalendarId}`,
+        );
+        continue;
+      }
       const sc = await this.prisma.calendarSyncedCalendars.upsert({
         where: {
           integrationUuid_externalCalendarId: {
