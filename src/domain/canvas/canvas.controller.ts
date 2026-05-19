@@ -12,6 +12,7 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
@@ -93,6 +94,7 @@ export class CanvasController {
   @Post(':uuid/ocr/upload-url')
   @HttpCode(201)
   @ApiOperation({ summary: 'OCR 이미지 업로드 URL 발급' })
+  @ApiParam({ name: 'uuid', description: 'Canvas UUID', format: 'uuid' })
   @ApiResponse({ status: 201, type: OcrUploadUrlResponseDto })
   @ApiErrorResponse({
     status: 404,

@@ -11,6 +11,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -48,6 +49,7 @@ export class OcrTriggerController {
   @Post(':uuid/ocr')
   @HttpCode(202)
   @ApiOperation({ summary: 'Canvas OCR 처리 트리거 (비동기)' })
+  @ApiParam({ name: 'uuid', description: 'Canvas UUID', format: 'uuid' })
   @ApiResponse({
     status: 202,
     description: 'OCR 작업이 큐에 추가됨',
