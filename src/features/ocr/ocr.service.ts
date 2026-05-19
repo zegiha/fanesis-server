@@ -8,17 +8,8 @@ export class OcrService {
   private readonly client: ImageAnnotatorClient;
 
   constructor(private readonly configService: ConfigService) {
-    const credentialsJson =
-      this.configService.get<string>('googleVision.credentialsJson') ?? '';
-
-    if (credentialsJson) {
-      this.client = new ImageAnnotatorClient({
-        credentials: JSON.parse(credentialsJson) as Record<string, unknown>,
-      });
-    } else {
-      // 개발 환경: Application Default Credentials(ADC) 사용
-      this.client = new ImageAnnotatorClient();
-    }
+    const apiKey = this.configService.get<string>('googleVision.apiKey') ?? '';
+    this.client = new ImageAnnotatorClient({ apiKey: apiKey || undefined });
   }
 
   async analyze(imageBuffer: Buffer, languageHints: string[]): Promise<string> {

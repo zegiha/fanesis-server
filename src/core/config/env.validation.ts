@@ -119,7 +119,7 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  GOOGLE_CLOUD_CREDENTIALS_JSON: string = '';
+  GOOGLE_VISION_API_KEY: string = '';
 }
 
 export function validate(config: Record<string, unknown>) {
