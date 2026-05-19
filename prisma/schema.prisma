@@ -22,6 +22,7 @@ model Users {
   folders              Folders[]
   tasks                Tasks[]
   calendarIntegrations CalendarIntegrations[]
+  devices              Devices[]
   canvases             Canvases[]
 
   @@map("users")
@@ -121,6 +122,24 @@ model TaskExternalLinks {
   @@unique([syncedCalendarUuid, externalEventId])
   @@index([syncedCalendarUuid], map: "idx_task_external_links_calendar")
   @@map("task_external_links")
+}
+
+model Devices {
+  uuid         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid     String   @map("user_uuid") @db.Uuid
+  pushToken    String   @unique @map("push_token")
+  deviceName   String?  @map("device_name")
+  deviceModel  String?  @map("device_model")
+  appVersion   String?  @map("app_version")
+  osVersion    String?  @map("os_version")
+  isActive     Boolean  @default(true) @map("is_active")
+  lastActiveAt DateTime @default(now()) @map("last_active_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user         Users    @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+
+  @@index([userUuid], map: "idx_devices_user")
+  @@map("devices")
 }
 
 enum CalendarProvider {
