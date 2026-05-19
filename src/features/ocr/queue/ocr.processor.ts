@@ -47,6 +47,8 @@ export class OcrProcessor extends WorkerHost {
   async process(job: Job<OcrJobPayload>): Promise<void> {
     const { canvasUuid, ocrKey, ocrImageKey, userId, userTimezone } = job.data;
 
+    console.log(1);
+
     // 1. Idempotency: 이미 처리된 OCR 키라면 스킵
     const existing = await this.prisma.taskCanvasSources.findUnique({
       where: { sourceKey: ocrKey },
@@ -56,20 +58,29 @@ export class OcrProcessor extends WorkerHost {
       return;
     }
 
+    console.log(2);
+
     // 2. R2에서 이미지 버퍼 가져오기
     const imageBuffer = await this.storageService.getObjectBuffer(ocrImageKey);
+
+    console.log(3);
 
     // 3. Timezone → language hints 변환
     const hints = timezoneToLanguageHints(userTimezone);
 
+    console.log(4);
+
     // 4. Google Vision OCR
     const title = await this.ocrService.analyze(imageBuffer, hints);
+    console.log('5-1', title);
 
     if (!title) {
       this.logger.log(`OCR result empty for canvasUuid=${canvasUuid}`);
       await this.notifyOcrResult(userId, canvasUuid, []);
       return;
     }
+
+    console.log('5-2', title);
 
     // 5. Task + TaskCanvasSource 트랜잭션 생성
     const task = await this.prisma.$transaction(async (tx) => {
@@ -92,6 +103,8 @@ export class OcrProcessor extends WorkerHost {
 
       return newTask;
     });
+
+    console.log(6);
 
     // 6. 클라이언트에 OCR 완료 푸시 알림
     await this.notifyOcrResult(userId, canvasUuid, [task.uuid]);

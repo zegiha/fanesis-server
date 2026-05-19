@@ -50,6 +50,7 @@ export class StorageService {
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: key,
+      ContentType: contentType,
     });
     return getSignedUrl(this.client, command, { expiresIn: ttlSeconds });
   }

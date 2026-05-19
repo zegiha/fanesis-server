@@ -13,10 +13,15 @@ export class OcrService {
   }
 
   async analyze(imageBuffer: Buffer, languageHints: string[]): Promise<string> {
-    const [result] = await this.client.documentTextDetection({
-      image: { content: imageBuffer.toString('base64') },
-      imageContext: { languageHints },
-    });
-    return (result.fullTextAnnotation?.text ?? '').replace(/\n/g, ' ').trim();
+    try {
+      const [result] = await this.client.documentTextDetection({
+        image: { content: imageBuffer.toString('base64') },
+        imageContext: { languageHints },
+      });
+      return (result.fullTextAnnotation?.text ?? '').replace(/\n/g, ' ').trim();
+    } catch (error) {
+      this.logger.error('Google Vision OCR failed', error);
+      return '';
+    }
   }
 }
