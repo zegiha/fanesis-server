@@ -23,6 +23,7 @@ model Users {
   tasks                Tasks[]
   calendarIntegrations CalendarIntegrations[]
   devices              Devices[]
+  canvases             Canvases[]
 
   @@map("users")
 }
@@ -62,6 +63,7 @@ model Tasks {
   user            Users               @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   backlogFolder   Folders?            @relation(fields: [backlogFolderId], references: [uuid], onDelete: SetNull)
   externalLink    TaskExternalLinks?
+  canvasSource    TaskCanvasSources?
 
   @@index([userUuid], map: "idx_tasks_user")
   @@map("tasks")
@@ -202,4 +204,31 @@ enum TaskTimeboxKind {
 
 enum TaskAffiliation {
   google
+}
+
+model Canvases {
+  uuid              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid          String              @map("user_uuid") @db.Uuid
+  date              DateTime            @db.Date
+  storageKey        String              @map("storage_key")
+  version           String              @default("v1.init")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user              Users               @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  taskCanvasSources TaskCanvasSources[]
+
+  @@unique([userUuid, date])
+  @@map("canvases")
+}
+
+model TaskCanvasSources {
+  taskUuid   String    @id @map("task_uuid") @db.Uuid
+  canvasUuid String?   @map("canvas_uuid") @db.Uuid
+  sourceKey  String    @unique @map("source_key")
+  ocrText    String?   @map("ocr_text")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  task       Tasks     @relation(fields: [taskUuid], references: [uuid], onDelete: Cascade)
+  canvas     Canvases? @relation(fields: [canvasUuid], references: [uuid], onDelete: SetNull)
+
+  @@map("task_canvas_sources")
 }
