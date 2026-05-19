@@ -72,6 +72,30 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   REDIS_URL: string = '';
+
+  @IsString()
+  @IsOptional()
+  APNS_KEY_ID: string = '';
+
+  @IsString()
+  @IsOptional()
+  APNS_TEAM_ID: string = '';
+
+  @IsString()
+  @IsOptional()
+  APNS_PRIVATE_KEY: string = '';
+
+  @IsString()
+  @IsOptional()
+  APNS_BUNDLE_ID: string = '';
+
+  @IsString()
+  @IsOptional()
+  APNS_PRODUCTION: string = 'false';
+
+  @IsString()
+  @IsOptional()
+  REMINDER_LEAD_MINUTES: string = '1';
 }
 
 export function validate(config: Record<string, unknown>) {
