@@ -28,12 +28,10 @@ import {
   OcrImageEmptyException,
   OcrImageInvalidTypeException,
   OcrImageTooLargeException,
-  OcrTokenExpiredException,
-  OcrTokenInvalidException,
 } from './exceptions/ocr.exceptions';
 import { OCR_QUEUE, OcrJob, OcrJobPayload } from './queue/ocr.queue.constants';
 
-const MAX_OCR_IMAGE_BYTES = 20 * 1024 * 1024; // 20 MB
+const MAX_OCR_IMAGE_BYTES = 20 * 1024 * 1024;
 
 @ApiTags('canvas')
 @ApiBearerAuth('access-token')
@@ -75,27 +73,12 @@ export class OcrTriggerController {
     @Body() dto: ConfirmOcrDto,
     @CurrentUser() user: CurrentUserType,
   ): Promise<{ message: string }> {
-    // 1. OCR 토큰 검증 (CanvasService.verifyOcrToken은 sync 메서드로 throw)
-    let ocrPayload: ReturnType<CanvasService['verifyOcrToken']>;
-    try {
-      ocrPayload = this.canvasService.verifyOcrToken(dto.ocrToken, user.uuid);
-    } catch (err: unknown) {
-      const name = err instanceof Error ? err.name : '';
-      if (name === 'TokenExpiredError') {
-        throw new OcrTokenExpiredException();
-      }
-      throw new OcrTokenInvalidException();
-    }
+    // 1. canvas 소유권 확인
+    await this.canvasService.findByUuidAndUser(uuid, user.uuid);
 
-    // 2. 토큰의 canvasUuid가 경로 파라미터와 일치하는지 검증
-    if (ocrPayload.canvasUuid !== uuid) {
-      throw new OcrTokenInvalidException();
-    }
+    const ocrImageKey = `ocr/${uuid}/${dto.ocrKey}.jpg`;
 
-    const { ocrKey } = ocrPayload;
-    const ocrImageKey = `ocr/${uuid}/${ocrKey}.jpg`;
-
-    // 3. R2 이미지 헤더 검증
+    // 2. R2 이미지 헤더 검증
     const head = await this.storageService.headObject(ocrImageKey);
 
     if (!head.contentType.startsWith('image/')) {
@@ -108,17 +91,17 @@ export class OcrTriggerController {
       throw new OcrImageTooLargeException();
     }
 
-    // 4. 유저 timezone 조회
+    // 3. 유저 timezone 조회
     const userRecord = await this.prisma.users.findUnique({
       where: { uuid: user.uuid },
       select: { timezone: true },
     });
     const userTimezone = userRecord?.timezone ?? 'Asia/Seoul';
 
-    // 5. OCR 큐에 job 추가
+    // 4. OCR 큐에 job 추가
     const payload: OcrJobPayload = {
       canvasUuid: uuid,
-      ocrKey,
+      ocrKey: dto.ocrKey,
       ocrImageKey,
       userId: user.uuid,
       userTimezone,

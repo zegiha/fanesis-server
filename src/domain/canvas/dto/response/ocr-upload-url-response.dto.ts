@@ -9,8 +9,8 @@ export class OcrUploadUrlResponseDto {
   presignedUrl!: string;
 
   @ApiProperty({
-    description: 'OCR 처리 요청 시 사용할 OCR 토큰 (5분 유효)',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'OCR 처리 요청 시 서버에 전달할 OCR 키',
+    example: 'aBcDeFgHiJ',
   })
-  ocrToken!: string;
+  ocrKey!: string;
 }

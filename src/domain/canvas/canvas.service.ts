@@ -1,14 +1,10 @@
 import { randomBytes } from 'crypto';
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable } from '@nestjs/common';
 import { StorageService } from '@/core/storage/storage.service';
 import { PrismaService } from '@/core/prisma/prisma.service';
 import { Canvases } from '@/generated/prisma/client';
 import {
   CanvasNotFoundException,
-  CanvasVersionTokenExpiredException,
-  CanvasVersionTokenInvalidException,
   CanvasFileTooLargeException,
   CanvasUploadNotConfirmedException,
 } from './exceptions/canvas.exceptions';
@@ -21,34 +17,12 @@ function genKey(): string {
   return randomBytes(8).toString('base64url').slice(0, 10);
 }
 
-interface VersionTokenPayload {
-  sub: string;
-  date: string;
-  versionKey: string;
-  aud: string;
-}
-
-export interface OcrTokenPayload {
-  sub: string;
-  canvasUuid: string;
-  ocrKey: string;
-  aud: string;
-}
-
 @Injectable()
 export class CanvasService {
-  private readonly logger = new Logger(CanvasService.name);
-  private readonly jwtUploadSecret: string;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-  ) {
-    this.jwtUploadSecret =
-      this.configService.get<string>('JWT_UPLOAD_SECRET') ?? '';
-  }
+  ) {}
 
   async getUploadUrl(
     userId: string,
@@ -56,48 +30,19 @@ export class CanvasService {
   ): Promise<CanvasUploadUrlResponseDto> {
     const versionKey = genKey();
     const storageKey = `canvases/${userId}/${date}/${versionKey}.bin`;
-
     const presignedUrl = await this.storageService.presignedPut(
       storageKey,
       'application/octet-stream',
       300,
     );
-
-    const versionToken = this.jwtService.sign(
-      { sub: userId, date, versionKey, aud: 'upload:canvas' },
-      { secret: this.jwtUploadSecret, expiresIn: '5m' },
-    );
-
-    return { presignedUrl, versionToken };
+    return { presignedUrl, versionKey };
   }
 
   async confirmUpload(
     userId: string,
     date: string,
-    versionToken: string,
+    versionKey: string,
   ): Promise<Canvases> {
-    let payload: VersionTokenPayload;
-    try {
-      payload = this.jwtService.verify<VersionTokenPayload>(versionToken, {
-        secret: this.jwtUploadSecret,
-      });
-    } catch (err: unknown) {
-      const name = err instanceof Error ? err.name : '';
-      if (name === 'TokenExpiredError') {
-        throw new CanvasVersionTokenExpiredException();
-      }
-      throw new CanvasVersionTokenInvalidException();
-    }
-
-    if (
-      payload.aud !== 'upload:canvas' ||
-      payload.sub !== userId ||
-      payload.date !== date
-    ) {
-      throw new CanvasVersionTokenInvalidException();
-    }
-
-    const { versionKey } = payload;
     const storageKey = `canvases/${userId}/${date}/${versionKey}.bin`;
 
     let contentLength: number;
@@ -113,7 +58,6 @@ export class CanvasService {
     }
 
     const dateValue = new Date(date);
-
     const existing = await this.prisma.canvases.findUnique({
       where: { userUuid_date: { userUuid: userId, date: dateValue } },
     });
@@ -127,7 +71,7 @@ export class CanvasService {
       newVersion = `v1.${versionKey}`;
     }
 
-    const canvas = await this.prisma.canvases.upsert({
+    return this.prisma.canvases.upsert({
       where: { userUuid_date: { userUuid: userId, date: dateValue } },
       create: {
         userUuid: userId,
@@ -135,23 +79,15 @@ export class CanvasService {
         storageKey,
         version: newVersion,
       },
-      update: {
-        storageKey,
-        version: newVersion,
-        updatedAt: new Date(),
-      },
+      update: { storageKey, version: newVersion, updatedAt: new Date() },
     });
-
-    return canvas;
   }
 
   async findByDate(userId: string, date: string): Promise<Canvases> {
     const canvas = await this.prisma.canvases.findUnique({
       where: { userUuid_date: { userUuid: userId, date: new Date(date) } },
     });
-    if (!canvas) {
-      throw new CanvasNotFoundException();
-    }
+    if (!canvas) throw new CanvasNotFoundException();
     return canvas;
   }
 
@@ -162,36 +98,23 @@ export class CanvasService {
     const canvas = await this.prisma.canvases.findUnique({
       where: { uuid: canvasUuid },
     });
-    if (!canvas || canvas.userUuid !== userId) {
+    if (!canvas || canvas.userUuid !== userId)
       throw new CanvasNotFoundException();
-    }
 
     const ocrKey = genKey();
     const ocrImageKey = `ocr/${canvasUuid}/${ocrKey}.jpg`;
-
     const presignedUrl = await this.storageService.presignedPut(
       ocrImageKey,
       'image/jpeg',
       300,
     );
-
-    const ocrToken = this.jwtService.sign(
-      { sub: userId, canvasUuid, ocrKey, aud: 'upload:ocr' },
-      { secret: this.jwtUploadSecret, expiresIn: '5m' },
-    );
-
-    return { presignedUrl, ocrToken };
+    return { presignedUrl, ocrKey };
   }
 
-  verifyOcrToken(token: string, userId: string): OcrTokenPayload {
-    const payload = this.jwtService.verify<OcrTokenPayload>(token, {
-      secret: this.jwtUploadSecret,
-    });
-
-    if (payload.aud !== 'upload:ocr' || payload.sub !== userId) {
-      throw new Error('invalid aud or sub');
-    }
-
-    return payload;
+  async findByUuidAndUser(uuid: string, userId: string): Promise<Canvases> {
+    const canvas = await this.prisma.canvases.findUnique({ where: { uuid } });
+    if (!canvas || canvas.userUuid !== userId)
+      throw new CanvasNotFoundException();
+    return canvas;
   }
 }

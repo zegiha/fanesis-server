@@ -98,10 +98,6 @@ class EnvironmentVariables {
   REMINDER_LEAD_MINUTES: string = '1';
 
   @IsString()
-  @MinLength(16)
-  JWT_UPLOAD_SECRET!: string;
-
-  @IsString()
   @IsOptional()
   R2_BUCKET: string = '';
 

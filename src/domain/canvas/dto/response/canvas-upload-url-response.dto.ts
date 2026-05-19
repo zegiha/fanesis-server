@@ -9,8 +9,8 @@ export class CanvasUploadUrlResponseDto {
   presignedUrl!: string;
 
   @ApiProperty({
-    description: '업로드 확인 시 사용할 버전 토큰 (5분 유효)',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: '업로드 확인 시 서버에 전달할 버전 키',
+    example: 'aBcDeFgHiJ',
   })
-  versionToken!: string;
+  versionKey!: string;
 }

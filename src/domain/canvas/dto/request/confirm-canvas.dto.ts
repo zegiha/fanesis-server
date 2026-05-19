@@ -10,10 +10,10 @@ export class ConfirmCanvasDto {
   date!: string;
 
   @ApiProperty({
-    description: '업로드 URL 발급 시 받은 버전 토큰 (JWT)',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: '업로드 URL 발급 시 받은 버전 키',
+    example: 'aBcDeFgHiJ',
   })
   @IsString()
   @MinLength(1)
-  versionToken!: string;
+  versionKey!: string;
 }

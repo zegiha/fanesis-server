@@ -62,7 +62,7 @@ export class CanvasController {
     const canvas = await this.canvasService.confirmUpload(
       user.uuid,
       dto.date,
-      dto.versionToken,
+      dto.versionKey,
     );
     return CanvasResponseDto.fromEntity(canvas);
   }
