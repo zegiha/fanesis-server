@@ -207,14 +207,14 @@ enum TaskAffiliation {
 }
 
 model Canvases {
-  uuid             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userUuid         String              @map("user_uuid") @db.Uuid
-  date             DateTime            @db.Date
-  storageKey       String              @map("storage_key")
-  version          String              @default("v1.init")
-  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user             Users               @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  uuid              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid          String              @map("user_uuid") @db.Uuid
+  date              DateTime            @db.Date
+  storageKey        String              @map("storage_key")
+  version           String              @default("v1.init")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user              Users               @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   taskCanvasSources TaskCanvasSources[]
 
   @@unique([userUuid, date])

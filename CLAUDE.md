@@ -430,7 +430,7 @@ CREATE TABLE canvases (
   user_uuid     UUID NOT NULL REFERENCES users(uuid) ON DELETE CASCADE,
   date          DATE NOT NULL,
   storage_key   TEXT NOT NULL,
-  version       INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
+  version       TEXT NOT NULL DEFAULT 'v1.init',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (user_uuid, date)
@@ -472,17 +472,17 @@ CREATE INDEX idx_focus_sessions_routine ON focus_sessions(routine_uuid) WHERE ro
 ```
 
 ### 5.15 `task_canvas_sources`
-1:1 → tasks (PK) · N:1 → canvases · OCR로 canvas에서 추출된 task의 출처 stroke 정보
+1:1 → tasks (PK) · N:1 → canvases (nullable, SET NULL) · OCR 이미지 R2 key 기반 출처 추적 · canvas 삭제 시 SET NULL, task는 유지
 
 ```sql
 CREATE TABLE task_canvas_sources (
-  task_uuid     UUID PRIMARY KEY REFERENCES tasks(uuid) ON DELETE CASCADE,
-  canvas_uuid   UUID NOT NULL REFERENCES canvases(uuid) ON DELETE CASCADE,
-  stroke_ids    JSONB NOT NULL,
-  ocr_text      TEXT,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  task_uuid    UUID PRIMARY KEY REFERENCES tasks(uuid) ON DELETE CASCADE,
+  canvas_uuid  UUID REFERENCES canvases(uuid) ON DELETE SET NULL,  -- nullable
+  source_key   TEXT NOT NULL UNIQUE,   -- R2 OCR 이미지 key (idempotency key)
+  ocr_text     TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX idx_task_canvas_sources_canvas ON task_canvas_sources(canvas_uuid);
+CREATE INDEX idx_task_canvas_sources_canvas ON task_canvas_sources(canvas_uuid) WHERE canvas_uuid IS NOT NULL;
 ```
 
 ---

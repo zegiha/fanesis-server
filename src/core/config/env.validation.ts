@@ -96,6 +96,30 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   REMINDER_LEAD_MINUTES: string = '1';
+
+  @IsString()
+  @MinLength(16)
+  JWT_UPLOAD_SECRET!: string;
+
+  @IsString()
+  @IsOptional()
+  R2_BUCKET: string = '';
+
+  @IsString()
+  @IsOptional()
+  R2_ENDPOINT: string = '';
+
+  @IsString()
+  @IsOptional()
+  R2_ACCESS_KEY: string = '';
+
+  @IsString()
+  @IsOptional()
+  R2_SECRET_KEY: string = '';
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CLOUD_CREDENTIALS_JSON: string = '';
 }
 
 export function validate(config: Record<string, unknown>) {
