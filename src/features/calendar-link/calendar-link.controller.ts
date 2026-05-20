@@ -27,6 +27,7 @@ import { ErrorCode } from '@/common/exceptions/error-codes';
 import { CurrentUser } from '@/core/auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '@/core/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import { CalendarLinkService } from './calendar-link.service';
 import { AuthorizeResponseDto } from './dto/authorize-response.dto';
 import { AvailableCalendarDto } from './dto/available-calendar.dto';
@@ -34,13 +35,18 @@ import { SubscribeCalendarsDto } from './dto/subscribe-calendars.dto';
 import { SyncedCalendarResponseDto } from './dto/response/synced-calendar.dto';
 
 @ApiTags('calendar-link')
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('calendar-link/google')
 export class CalendarLinkController {
   constructor(private readonly service: CalendarLinkService) {}
 
   @Get('authorize')
   @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequiredTermsGuard)
   @ApiOperation({
     summary: 'Google Calendar 연결을 위한 authorize URL 발급',
     description:
@@ -66,7 +72,7 @@ export class CalendarLinkController {
 
   @Get('calendars')
   @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequiredTermsGuard)
   @ApiOperation({
     summary: '연결된 Google 계정의 캘린더 목록 조회',
     description:
@@ -85,7 +91,7 @@ export class CalendarLinkController {
 
   @Post('calendars/subscribe')
   @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequiredTermsGuard)
   @ApiOperation({
     summary: '캘린더 구독 (초기 동기화 + push 채널 등록)',
     description:
@@ -109,7 +115,7 @@ export class CalendarLinkController {
 
   @Delete('calendars/:uuid')
   @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequiredTermsGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: '캘린더 구독 해제',
@@ -130,7 +136,7 @@ export class CalendarLinkController {
 
   @Delete()
   @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RequiredTermsGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Google Calendar 연결 해제',

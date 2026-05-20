@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -25,18 +25,19 @@ model Users {
   calendarIntegrations CalendarIntegrations[]
   devices              Devices[]
   canvases             Canvases[]
+  termsAgreements      TermsAgreements[]
 
   @@map("users")
 }
 
 model Folders {
-  uuid      String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userUuid  String          @map("user_uuid") @db.Uuid
+  uuid      String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid  String         @map("user_uuid") @db.Uuid
   name      String
   color     AccentColorKey
-  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user      Users           @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user      Users          @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
   tasks     Tasks[]
 
   @@index([userUuid], map: "idx_folders_user")
@@ -44,25 +45,25 @@ model Folders {
 }
 
 model Tasks {
-  uuid            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userUuid        String              @map("user_uuid") @db.Uuid
+  uuid            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid        String             @map("user_uuid") @db.Uuid
   title           String
   priority        TaskPriority?
   affiliation     TaskAffiliation?
-  backlogKind     TaskBacklogKind     @map("backlog_kind")
-  backlogFolderId String?             @map("backlog_folder_id") @db.Uuid
-  activeKind      TaskActiveKind?     @map("active_kind")
-  timeboxKind     TaskTimeboxKind?    @map("timebox_kind")
-  scheduledDate   DateTime?           @map("scheduled_date") @db.Date
-  startTime       DateTime?           @map("start_time") @db.Time(6)
-  durationSec     Int?                @map("duration_sec")
-  chunkSec        Int?                @map("chunk_sec")
-  breakSec        Int?                @map("break_sec")
-  doneDate        DateTime?           @map("done_date") @db.Timestamptz(6)
-  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user            Users               @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
-  backlogFolder   Folders?            @relation(fields: [backlogFolderId], references: [uuid], onDelete: SetNull)
+  backlogKind     TaskBacklogKind    @map("backlog_kind")
+  backlogFolderId String?            @map("backlog_folder_id") @db.Uuid
+  activeKind      TaskActiveKind?    @map("active_kind")
+  timeboxKind     TaskTimeboxKind?   @map("timebox_kind")
+  scheduledDate   DateTime?          @map("scheduled_date") @db.Date
+  startTime       DateTime?          @map("start_time") @db.Time(6)
+  durationSec     Int?               @map("duration_sec")
+  chunkSec        Int?               @map("chunk_sec")
+  breakSec        Int?               @map("break_sec")
+  doneDate        DateTime?          @map("done_date") @db.Timestamptz(6)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user            Users              @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  backlogFolder   Folders?           @relation(fields: [backlogFolderId], references: [uuid], onDelete: SetNull)
   externalLink    TaskExternalLinks?
   canvasSource    TaskCanvasSources?
 
@@ -71,19 +72,19 @@ model Tasks {
 }
 
 model CalendarIntegrations {
-  uuid                   String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userUuid               String                   @map("user_uuid") @db.Uuid
-  provider               CalendarProvider
-  providerAccountId      String                   @map("provider_account_id")
-  providerEmail          String                   @map("provider_email")
-  accessTokenEncrypted   String                   @map("access_token_encrypted")
-  refreshTokenEncrypted  String                   @map("refresh_token_encrypted")
-  tokenExpiresAt         DateTime                 @map("token_expires_at") @db.Timestamptz(6)
-  isActive               Boolean                  @default(true) @map("is_active")
-  createdAt              DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt              DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user                   Users                    @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
-  syncedCalendars        CalendarSyncedCalendars[]
+  uuid                  String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid              String                    @map("user_uuid") @db.Uuid
+  provider              CalendarProvider
+  providerAccountId     String                    @map("provider_account_id")
+  providerEmail         String                    @map("provider_email")
+  accessTokenEncrypted  String                    @map("access_token_encrypted")
+  refreshTokenEncrypted String                    @map("refresh_token_encrypted")
+  tokenExpiresAt        DateTime                  @map("token_expires_at") @db.Timestamptz(6)
+  isActive              Boolean                   @default(true) @map("is_active")
+  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                  Users                     @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  syncedCalendars       CalendarSyncedCalendars[]
 
   @@unique([userUuid, provider, providerAccountId])
   @@index([userUuid], map: "idx_calendar_integrations_user")
@@ -91,20 +92,20 @@ model CalendarIntegrations {
 }
 
 model CalendarSyncedCalendars {
-  uuid                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  integrationUuid     String               @map("integration_uuid") @db.Uuid
-  externalCalendarId  String               @map("external_calendar_id")
-  summary             String?
-  syncToken           String?              @map("sync_token")
-  lastSyncedAt        DateTime?            @map("last_synced_at") @db.Timestamptz(6)
-  webhookChannelId    String?              @unique @map("webhook_channel_id")
-  webhookResourceId   String?              @map("webhook_resource_id")
-  webhookExpiresAt    DateTime?            @map("webhook_expires_at") @db.Timestamptz(6)
-  isActive            Boolean              @default(true) @map("is_active")
-  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  integration         CalendarIntegrations @relation(fields: [integrationUuid], references: [uuid], onDelete: Cascade)
-  taskLinks           TaskExternalLinks[]
+  uuid               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  integrationUuid    String               @map("integration_uuid") @db.Uuid
+  externalCalendarId String               @map("external_calendar_id")
+  summary            String?
+  syncToken          String?              @map("sync_token")
+  lastSyncedAt       DateTime?            @map("last_synced_at") @db.Timestamptz(6)
+  webhookChannelId   String?              @unique @map("webhook_channel_id")
+  webhookResourceId  String?              @map("webhook_resource_id")
+  webhookExpiresAt   DateTime?            @map("webhook_expires_at") @db.Timestamptz(6)
+  isActive           Boolean              @default(true) @map("is_active")
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  integration        CalendarIntegrations @relation(fields: [integrationUuid], references: [uuid], onDelete: Cascade)
+  taskLinks          TaskExternalLinks[]
 
   @@unique([integrationUuid, externalCalendarId])
   @@index([integrationUuid], map: "idx_synced_calendars_integration")
@@ -238,6 +239,54 @@ enum RoutineRepeatKind {
   day_of_week
   week
   day
+}
+
+enum TermsKind {
+  service
+  privacy
+  marketing
+}
+
+model Terms {
+  uuid        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind        TermsKind
+  version     Int
+  isRequired  Boolean           @map("is_required")
+  effectiveAt DateTime          @map("effective_at") @db.Timestamptz(6)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  contents    TermsContents[]
+  agreements  TermsAgreements[]
+
+  @@unique([kind, version])
+  @@index([kind, version(sort: Desc)], map: "idx_terms_kind_version")
+  @@map("terms")
+}
+
+model TermsContents {
+  termsUuid String   @map("terms_uuid") @db.Uuid
+  language  Language
+  content   String
+  terms     Terms    @relation(fields: [termsUuid], references: [uuid], onDelete: Cascade)
+
+  @@id([termsUuid, language])
+  @@map("terms_contents")
+}
+
+model TermsAgreements {
+  uuid      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid  String   @map("user_uuid") @db.Uuid
+  termsUuid String   @map("terms_uuid") @db.Uuid
+  agreed    Boolean
+  agreedAt  DateTime @default(now()) @map("agreed_at") @db.Timestamptz(6)
+  ipAddress String?  @map("ip_address") @db.Inet
+  userAgent String?  @map("user_agent")
+  user      Users    @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  terms     Terms    @relation(fields: [termsUuid], references: [uuid], onDelete: Cascade)
+
+  @@index([userUuid], map: "idx_terms_agreements_user")
+  @@index([termsUuid], map: "idx_terms_agreements_terms")
+  @@index([userUuid, agreedAt(sort: Desc)], map: "idx_terms_agreements_user_agreed_at")
+  @@map("terms_agreements")
 }
 
 /// lineageUuid: 같은 논리적 routine의 시간순 버전 그룹 ID.

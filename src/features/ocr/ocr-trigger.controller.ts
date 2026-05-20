@@ -25,6 +25,7 @@ import { PrismaService } from '@/core/prisma/prisma.service';
 import { StorageService } from '@/core/storage/storage.service';
 import { CanvasService } from '@/domain/canvas/canvas.service';
 import { ConfirmOcrDto } from '@/domain/canvas/dto/request/confirm-ocr.dto';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import {
   OcrImageEmptyException,
   OcrImageInvalidTypeException,
@@ -36,7 +37,12 @@ const MAX_OCR_IMAGE_BYTES = 20 * 1024 * 1024;
 
 @ApiTags('canvas')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequiredTermsGuard)
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('canvases')
 export class OcrTriggerController {
   constructor(

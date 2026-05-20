@@ -20,13 +20,19 @@ import { ErrorCode } from '@/common/exceptions/error-codes';
 import { CurrentUser } from '@/core/auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '@/core/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import { DeviceService } from './device.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { DeviceResponseDto } from './dto/response/device-response.dto';
 
 @ApiTags('device')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequiredTermsGuard)
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('devices')
 export class DeviceController {
   constructor(private readonly deviceService: DeviceService) {}

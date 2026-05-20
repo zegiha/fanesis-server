@@ -22,6 +22,7 @@ import { ErrorCode } from '@/common/exceptions/error-codes';
 import { CurrentUser } from '@/core/auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '@/core/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import { CanvasService } from './canvas.service';
 import { CanvasUploadUrlDto } from './dto/request/canvas-upload-url.dto';
 import { ConfirmCanvasDto } from './dto/request/confirm-canvas.dto';
@@ -31,7 +32,12 @@ import { OcrUploadUrlResponseDto } from './dto/response/ocr-upload-url-response.
 
 @ApiTags('canvas')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequiredTermsGuard)
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('canvases')
 export class CanvasController {
   constructor(private readonly canvasService: CanvasService) {}

@@ -5,6 +5,7 @@ import apnsConfig from '@/core/config/apns.config';
 import { googleVisionConfig } from '@/core/config/google-vision.config';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { CanvasModule } from '@/domain/canvas/canvas.module';
+import { TermsModule } from '@/domain/terms/terms.module';
 import { PushNotificationModule } from '@/features/push-notification/push-notification.module';
 import { OcrTriggerController } from './ocr-trigger.controller';
 import { OcrService } from './ocr.service';
@@ -24,6 +25,7 @@ import { OCR_QUEUE } from './queue/ocr.queue.constants';
     }),
     PrismaModule,
     CanvasModule,
+    TermsModule,
     PushNotificationModule,
   ],
   controllers: [OcrTriggerController],

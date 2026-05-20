@@ -5,6 +5,7 @@ import apnsConfig from '@/core/config/apns.config';
 import { AuthModule } from '@/core/auth/auth.module';
 import { PrismaModule } from '@/core/prisma/prisma.module';
 import { DeviceModule } from '@/domain/device/device.module';
+import { TermsModule } from '@/domain/terms/terms.module';
 import { ApnsProvider } from './apns.provider';
 import { PushNotificationController } from './push-notification.controller';
 import { PushNotificationService } from './push-notification.service';
@@ -17,6 +18,7 @@ import { PUSH_NOTIFICATION_QUEUE } from './queue/queue.constants';
     PrismaModule,
     AuthModule,
     DeviceModule,
+    TermsModule,
     BullModule.registerQueue({
       name: PUSH_NOTIFICATION_QUEUE,
       defaultJobOptions: {

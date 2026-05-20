@@ -13,6 +13,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { SkipTermsCheck } from '@/domain/terms/decorators/skip-terms-check.decorator';
 import { SendPushDto } from './dto/send-push.dto';
 import { SendPushResponseDto } from './dto/send-push-response.dto';
 import { PushNotificationService } from './push-notification.service';
@@ -22,6 +23,7 @@ import { PushNotificationService } from './push-notification.service';
 // TODO(prod): JwtAuthGuard는 개발/테스트 편의를 위한 임시 조치다.
 // 프로덕션 배포 전 별도 AdminGuard(API Key 또는 내부 네트워크 제한)로 교체할 것.
 @UseGuards(JwtAuthGuard)
+@SkipTermsCheck()
 @Controller('push-notifications')
 export class PushNotificationController {
   constructor(private readonly pushService: PushNotificationService) {}

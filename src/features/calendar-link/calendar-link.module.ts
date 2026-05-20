@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from '@/core/auth/auth.module';
 import googleCalendarConfig from '@/core/config/google-calendar.config';
 import { PrismaModule } from '@/core/prisma/prisma.module';
+import { TermsModule } from '@/domain/terms/terms.module';
 import { CalendarLinkController } from './calendar-link.controller';
 import { CalendarLinkService } from './calendar-link.service';
 import { GoogleWebhookController } from './google-webhook.controller';
@@ -22,6 +23,7 @@ import { TaskOutboundSyncDispatcher } from './task-outbound-sync.dispatcher';
     AuthModule,
     JwtModule.register({}),
     BullModule.registerQueue({ name: CALENDAR_LINK_QUEUE }),
+    TermsModule,
   ],
   controllers: [CalendarLinkController, GoogleWebhookController],
   providers: [

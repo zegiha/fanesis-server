@@ -10,6 +10,7 @@ import { HttpAdapterHost } from '@nestjs/core';
 import { AppException } from '../exceptions/app.exception';
 
 interface ErrorResponseBody {
+  [key: string]: unknown;
   statusCode: number;
   message: string | string[];
   error: string;
@@ -57,7 +58,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error = 'Internal Server Error';
     }
 
+    const extras =
+      exception instanceof AppException ? (exception.extras ?? {}) : {};
+
     const body: ErrorResponseBody = {
+      ...extras,
       statusCode,
       message,
       error,

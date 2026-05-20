@@ -24,6 +24,7 @@ import { ErrorCode } from '@/common/exceptions/error-codes';
 import { CurrentUser } from '@/core/auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '@/core/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { FolderResponseDto } from './dto/response/folder-response.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
@@ -31,7 +32,12 @@ import { FolderService } from './folder.service';
 
 @ApiTags('folder')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequiredTermsGuard)
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('folders')
 export class FolderController {
   constructor(private readonly folderService: FolderService) {}
