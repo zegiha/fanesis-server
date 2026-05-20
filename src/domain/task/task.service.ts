@@ -71,11 +71,62 @@ export class TaskService {
     });
   }
 
-  findAll(userUuid: string): Promise<Tasks[]> {
+  async findInbox(
+    userUuid: string,
+    page: number,
+    limit: number,
+  ): Promise<{ items: Tasks[]; total: number }> {
+    const where: Prisma.TasksWhereInput = {
+      userUuid,
+      backlogKind: 'inbox',
+      doneDate: null,
+    };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.tasks.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.tasks.count({ where }),
+    ]);
+    return { items, total };
+  }
+
+  async findByFolder(userUuid: string, folderUuid: string): Promise<Tasks[]> {
+    await this.assertFolderOwned(userUuid, folderUuid);
     return this.prisma.tasks.findMany({
-      where: { userUuid },
+      where: { userUuid, backlogFolderId: folderUuid, doneDate: null },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  findByDate(userUuid: string, date: string): Promise<Tasks[]> {
+    return this.prisma.tasks.findMany({
+      where: { userUuid, scheduledDate: new Date(date) },
+      orderBy: [{ startTime: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async findDone(
+    userUuid: string,
+    page: number,
+    limit: number,
+  ): Promise<{ items: Tasks[]; total: number }> {
+    const where: Prisma.TasksWhereInput = {
+      userUuid,
+      doneDate: { not: null },
+    };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.tasks.findMany({
+        where,
+        orderBy: { doneDate: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.tasks.count({ where }),
+    ]);
+    return { items, total };
   }
 
   async findOne(userUuid: string, taskUuid: string): Promise<Tasks> {
@@ -171,6 +222,8 @@ export class TaskService {
     if (dto.durationSec !== undefined) data.durationSec = dto.durationSec;
     if (dto.chunkSec !== undefined) data.chunkSec = dto.chunkSec;
     if (dto.breakSec !== undefined) data.breakSec = dto.breakSec;
+    if (dto.doneDate !== undefined)
+      data.doneDate = dto.doneDate ? new Date(dto.doneDate) : null;
 
     const updated = await this.prisma.tasks.update({
       where: { uuid: taskUuid },
