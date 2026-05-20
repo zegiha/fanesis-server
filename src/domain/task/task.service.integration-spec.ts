@@ -1,12 +1,21 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { PrismaClient } from '@/generated/prisma/client';
 import { Language } from '@/generated/prisma/client';
+import { PrismaService } from '@/core/prisma/prisma.service';
 import { createTestPrisma, truncateAll } from '../../../test/setup/prisma-test';
+import { TaskService } from './task.service';
+import { FolderNotFoundException } from './task.exceptions';
 
 describe('tasks (integration)', () => {
   let prisma: PrismaClient;
+  let service: TaskService;
 
   beforeAll(() => {
     prisma = createTestPrisma();
+    service = new TaskService(
+      prisma as unknown as PrismaService,
+      new EventEmitter2(),
+    );
   });
 
   beforeEach(async () => {
@@ -166,5 +175,182 @@ describe('tasks (integration)', () => {
         },
       }),
     ).rejects.toThrow();
+  });
+
+  describe('list endpoints', () => {
+    it('findInbox returns only inbox + incomplete and paginates', async () => {
+      const user = await createUser();
+      const folder = await prisma.folders.create({
+        data: { userUuid: user.uuid, name: 'work', color: 'blue' },
+      });
+      // 25 inbox tasks
+      for (let i = 0; i < 25; i++) {
+        await prisma.tasks.create({
+          data: {
+            userUuid: user.uuid,
+            title: `inbox-${i}`,
+            backlogKind: 'inbox',
+          },
+        });
+      }
+      // folder task (should be excluded)
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'folder-task',
+          backlogKind: 'folder',
+          backlogFolderId: folder.uuid,
+        },
+      });
+      // done inbox task (should be excluded by doneDate filter)
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'done-inbox',
+          backlogKind: 'inbox',
+          doneDate: new Date(),
+        },
+      });
+
+      const page1 = await service.findInbox(user.uuid, 1, 20);
+      expect(page1.total).toBe(25);
+      expect(page1.items).toHaveLength(20);
+
+      const page2 = await service.findInbox(user.uuid, 2, 20);
+      expect(page2.items).toHaveLength(5);
+    });
+
+    it('findByFolder returns only that folder + incomplete', async () => {
+      const user = await createUser();
+      const folder = await prisma.folders.create({
+        data: { userUuid: user.uuid, name: 'work', color: 'blue' },
+      });
+      const otherFolder = await prisma.folders.create({
+        data: { userUuid: user.uuid, name: 'other', color: 'red' },
+      });
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'in-folder',
+          backlogKind: 'folder',
+          backlogFolderId: folder.uuid,
+        },
+      });
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'in-folder-done',
+          backlogKind: 'folder',
+          backlogFolderId: folder.uuid,
+          doneDate: new Date(),
+        },
+      });
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'in-other',
+          backlogKind: 'folder',
+          backlogFolderId: otherFolder.uuid,
+        },
+      });
+
+      const result = await service.findByFolder(user.uuid, folder.uuid);
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('in-folder');
+    });
+
+    it('findByFolder throws FolderNotFoundException for a folder owned by another user', async () => {
+      const owner = await createUser();
+      const stranger = await createUser();
+      const folder = await prisma.folders.create({
+        data: { userUuid: owner.uuid, name: 'work', color: 'blue' },
+      });
+      await expect(
+        service.findByFolder(stranger.uuid, folder.uuid),
+      ).rejects.toBeInstanceOf(FolderNotFoundException);
+    });
+
+    it('findByDate includes completed tasks for that date and excludes other dates', async () => {
+      const user = await createUser();
+      const target = new Date('2026-05-20');
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'scheduled-active',
+          backlogKind: 'inbox',
+          scheduledDate: target,
+        },
+      });
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'scheduled-done',
+          backlogKind: 'inbox',
+          scheduledDate: target,
+          doneDate: new Date('2026-05-20T12:00:00Z'),
+        },
+      });
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'other-date',
+          backlogKind: 'inbox',
+          scheduledDate: new Date('2026-05-21'),
+        },
+      });
+
+      const result = await service.findByDate(user.uuid, '2026-05-20');
+      const titles = result.map((t) => t.title).sort();
+      expect(titles).toEqual(['scheduled-active', 'scheduled-done']);
+    });
+
+    it('findDone returns only completed tasks ordered by doneDate desc', async () => {
+      const user = await createUser();
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'not-done',
+          backlogKind: 'inbox',
+        },
+      });
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'done-older',
+          backlogKind: 'inbox',
+          doneDate: new Date('2026-05-19T10:00:00Z'),
+        },
+      });
+      await prisma.tasks.create({
+        data: {
+          userUuid: user.uuid,
+          title: 'done-newer',
+          backlogKind: 'inbox',
+          doneDate: new Date('2026-05-20T10:00:00Z'),
+        },
+      });
+
+      const result = await service.findDone(user.uuid, 1, 20);
+      expect(result.total).toBe(2);
+      expect(result.items.map((t) => t.title)).toEqual([
+        'done-newer',
+        'done-older',
+      ]);
+    });
+
+    it('isolates list endpoints per user (no cross-user leakage)', async () => {
+      const me = await createUser();
+      const other = await createUser();
+      await prisma.tasks.create({
+        data: { userUuid: me.uuid, title: 'mine', backlogKind: 'inbox' },
+      });
+      await prisma.tasks.create({
+        data: { userUuid: other.uuid, title: 'theirs', backlogKind: 'inbox' },
+      });
+
+      const inbox = await service.findInbox(me.uuid, 1, 20);
+      expect(inbox.total).toBe(1);
+      expect(inbox.items[0].title).toBe('mine');
+    });
   });
 });
