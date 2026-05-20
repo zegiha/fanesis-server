@@ -8,13 +8,21 @@ import { TermsNotFoundException } from './terms.exceptions';
 export class TermsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listLatestForUser(userUuid: string): Promise<LatestTermsEntity[]> {
-    // Resolve user language
-    const user = await this.prisma.users.findUnique({
-      where: { uuid: userUuid },
-      select: { language: true },
-    });
-    const language: Language = user?.language ?? Language.ko;
+  async listLatestForUser(
+    userUuid: string,
+    languageOverride?: Language,
+  ): Promise<LatestTermsEntity[]> {
+    // Resolve primary language: query > user.language > en
+    let primaryLanguage: Language;
+    if (languageOverride) {
+      primaryLanguage = languageOverride;
+    } else {
+      const user = await this.prisma.users.findUnique({
+        where: { uuid: userUuid },
+        select: { language: true },
+      });
+      primaryLanguage = user?.language ?? Language.en;
+    }
 
     // Get the latest version per kind (effective_at <= NOW())
     const latestTerms = await this.prisma.$queryRaw<
@@ -38,14 +46,27 @@ export class TermsService {
 
     const termUuids = latestTerms.map((t) => t.uuid);
 
-    // Get content for user's language
+    // Fetch contents for primary language + en fallback in one query
+    const languagesToFetch =
+      primaryLanguage === Language.en
+        ? [Language.en]
+        : [primaryLanguage, Language.en];
     const contents = await this.prisma.termsContents.findMany({
       where: {
         termsUuid: { in: termUuids },
-        language,
+        language: { in: languagesToFetch },
       },
     });
-    const contentMap = new Map(contents.map((c) => [c.termsUuid, c.content]));
+    const primaryContentMap = new Map(
+      contents
+        .filter((c) => c.language === primaryLanguage)
+        .map((c) => [c.termsUuid, c.content]),
+    );
+    const fallbackContentMap = new Map(
+      contents
+        .filter((c) => c.language === Language.en)
+        .map((c) => [c.termsUuid, c.content]),
+    );
 
     // Get latest agreement per terms for this user (tie-break: agreed_at DESC, uuid DESC)
     const agreements = await this.prisma.$queryRaw<
@@ -61,16 +82,32 @@ export class TermsService {
       agreements.map((a) => [a.terms_uuid, a.agreed]),
     );
 
-    return latestTerms.map((t) => ({
-      uuid: t.uuid,
-      kind: t.kind,
-      version: t.version,
-      isRequired: t.is_required,
-      effectiveAt: t.effective_at,
-      content: contentMap.get(t.uuid) ?? null,
-      contentLanguage: contentMap.has(t.uuid) ? language : null,
-      agreed: agreementMap.get(t.uuid) ?? false,
-    }));
+    return latestTerms.map((t) => {
+      const primary = primaryContentMap.get(t.uuid);
+      const fallback = fallbackContentMap.get(t.uuid);
+      let content: string | null;
+      let contentLanguage: Language | null;
+      if (primary !== undefined) {
+        content = primary;
+        contentLanguage = primaryLanguage;
+      } else if (fallback !== undefined) {
+        content = fallback;
+        contentLanguage = Language.en;
+      } else {
+        content = null;
+        contentLanguage = null;
+      }
+      return {
+        uuid: t.uuid,
+        kind: t.kind,
+        version: t.version,
+        isRequired: t.is_required,
+        effectiveAt: t.effective_at,
+        content,
+        contentLanguage,
+        agreed: agreementMap.get(t.uuid) ?? false,
+      };
+    });
   }
 
   async agreeTerms(

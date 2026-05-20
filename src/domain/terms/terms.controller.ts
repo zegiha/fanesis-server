@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Post,
   Get,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -25,6 +26,7 @@ import type { CurrentUserType } from '@/core/auth/decorators/current-user.decora
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
 import { SkipTermsCheck } from './decorators/skip-terms-check.decorator';
 import { AgreeTermsDto } from './dto/agree-terms.dto';
+import { ListLatestTermsQueryDto } from './dto/list-latest-query.dto';
 import { LatestTermsResponseDto } from './dto/response/latest-terms-response.dto';
 import { TermsService } from './terms.service';
 
@@ -41,7 +43,8 @@ export class TermsController {
     summary: '최신 약관 목록 조회',
     description:
       '현재 발효된(effective_at <= NOW()) 각 kind별 최신 버전 약관 목록을 반환한다. ' +
-      '사용자 언어에 맞는 본문이 없으면 content=null, contentLanguage=null로 반환된다. ' +
+      'content 언어 우선순위: query.language → users.language → en fallback. ' +
+      '세 단계 모두 본문이 없으면 content=null, contentLanguage=null. ' +
       '미동의 사용자도 접근 가능하다.',
   })
   @ApiOkResponse({
@@ -50,8 +53,12 @@ export class TermsController {
   })
   async listLatest(
     @CurrentUser() user: CurrentUserType,
+    @Query() query: ListLatestTermsQueryDto,
   ): Promise<LatestTermsResponseDto[]> {
-    const entities = await this.termsService.listLatestForUser(user.uuid);
+    const entities = await this.termsService.listLatestForUser(
+      user.uuid,
+      query.language,
+    );
     return entities.map((e) => LatestTermsResponseDto.fromEntity(e));
   }
 

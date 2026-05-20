@@ -54,7 +54,7 @@ export class LatestTermsResponseDto {
 
   @ApiProperty({
     description:
-      '요청 사용자의 언어에 맞는 약관 본문. 해당 언어 row가 없으면 null.',
+      '약관 본문. 언어 우선순위는 query.language → users.language → en fallback. 셋 다 없으면 null.',
     example: '서비스 이용 약관 본문...',
     nullable: true,
     required: false,
@@ -62,7 +62,8 @@ export class LatestTermsResponseDto {
   content!: string | null;
 
   @ApiProperty({
-    description: '반환된 content의 언어 코드. content가 null이면 null.',
+    description:
+      '반환된 content의 실제 언어 코드 (primary 또는 en fallback). content가 null이면 null.',
     example: 'ko',
     nullable: true,
     required: false,

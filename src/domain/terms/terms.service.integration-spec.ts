@@ -302,6 +302,53 @@ describe('terms (integration)', () => {
       expect(result[0].agreed).toBe(false);
     });
 
+    it('falls back to en when user language (ko) row is missing', async () => {
+      const user = await createUser(Language.ko);
+      const t = await createTerms();
+      await createTermsContent(t.uuid, Language.en, 'English fallback');
+
+      const result = await service.listLatestForUser(user.uuid);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toBe('English fallback');
+      expect(result[0].contentLanguage).toBe(Language.en);
+    });
+
+    it('returns content=null when both primary (ko) and en rows are missing', async () => {
+      const user = await createUser(Language.ko);
+      await createTerms();
+
+      const result = await service.listLatestForUser(user.uuid);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toBeNull();
+      expect(result[0].contentLanguage).toBeNull();
+    });
+
+    it('uses languageOverride (query string) to select content language', async () => {
+      const user = await createUser(Language.ko);
+      const t = await createTerms();
+      await createTermsContent(t.uuid, Language.ko, '한국어 본문');
+      await createTermsContent(t.uuid, Language.en, 'English body');
+
+      const result = await service.listLatestForUser(user.uuid, Language.en);
+
+      expect(result[0].content).toBe('English body');
+      expect(result[0].contentLanguage).toBe(Language.en);
+    });
+
+    it('languageOverride still falls back to en when override row is missing', async () => {
+      const user = await createUser(Language.en);
+      const t = await createTerms();
+      await createTermsContent(t.uuid, Language.en, 'EN only');
+
+      // request ko via override, but only en exists → en fallback wins
+      const result = await service.listLatestForUser(user.uuid, Language.ko);
+
+      expect(result[0].content).toBe('EN only');
+      expect(result[0].contentLanguage).toBe(Language.en);
+    });
+
     it('tie-break: when agreed_at is identical, uuid DESC determines winner', async () => {
       const user = await createUser();
       const t = await createTerms();
