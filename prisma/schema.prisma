@@ -26,6 +26,7 @@ model Users {
   devices              Devices[]
   canvases             Canvases[]
   termsAgreements      TermsAgreements[]
+  focusSessions        FocusSessions[]
 
   @@map("users")
 }
@@ -66,6 +67,7 @@ model Tasks {
   backlogFolder   Folders?           @relation(fields: [backlogFolderId], references: [uuid], onDelete: SetNull)
   externalLink    TaskExternalLinks?
   canvasSource    TaskCanvasSources?
+  focusSessions   FocusSessions[]
 
   @@index([userUuid], map: "idx_tasks_user")
   @@map("tasks")
@@ -311,4 +313,24 @@ model Routines {
   @@index([userUuid], map: "idx_routines_user")
   @@index([userUuid, lineageUuid], map: "idx_routines_user_lineage")
   @@map("routines")
+}
+
+enum FocusSessionKind {
+  focus
+  break
+}
+
+model FocusSessions {
+  uuid      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid  String           @map("user_uuid") @db.Uuid
+  kind      FocusSessionKind
+  taskUuid  String?          @map("task_uuid") @db.Uuid
+  startedAt DateTime         @map("started_at") @db.Timestamptz(6)
+  endedAt   DateTime?        @map("ended_at") @db.Timestamptz(6)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      Users            @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  task      Tasks?           @relation(fields: [taskUuid], references: [uuid], onDelete: SetNull)
+
+  @@index([userUuid, startedAt(sort: Desc)], map: "idx_focus_sessions_user_started")
+  @@map("focus_sessions")
 }
