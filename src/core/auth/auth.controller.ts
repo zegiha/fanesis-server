@@ -30,7 +30,7 @@ export class AuthController {
   })
   @ApiUnauthorizedResponse({ description: '유효하지 않은 Google ID 토큰' })
   googleLogin(@Body() dto: GoogleLoginDto): Promise<AuthResponseDto> {
-    return this.auth.loginWithGoogle(dto.idToken);
+    return this.auth.loginWithGoogle(dto.idToken, dto.timezone);
   }
 
   @Post('refresh')

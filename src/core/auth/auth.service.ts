@@ -3,6 +3,7 @@ import { GoogleAuthService } from './google-auth.service';
 import { JwtTokenService } from './jwt-token.service';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { Users } from '../../generated/prisma/client';
+import { deriveLanguageFromTimezone } from '@/common/utils/language-from-timezone';
 import { AuthResponseDto } from './dto/response/auth-response.dto';
 import { RefreshResponseDto } from './dto/response/refresh-response.dto';
 import { UserResponseDto } from './dto/response/user-response.dto';
@@ -15,7 +16,10 @@ export class AuthService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async loginWithGoogle(idToken: string): Promise<AuthResponseDto> {
+  async loginWithGoogle(
+    idToken: string,
+    timezone: string,
+  ): Promise<AuthResponseDto> {
     const g = await this.googleTokenService.verify(idToken);
 
     const { user } = await this.prisma.$transaction(async (tx) => {
@@ -31,6 +35,7 @@ export class AuthService {
       });
 
       // 2-A. 기존 유저 — last_used_at / provider_email 갱신
+      //      timezone/language는 변경하지 않는다 (PATCH /users/me/timezone 전용)
       if (identity) {
         await tx.oAuthIdentities.update({
           where: { uuid: identity.uuid },
@@ -43,12 +48,13 @@ export class AuthService {
       }
 
       // 2-B. 신규 — user + identity 동시 생성 (nested write = 자동 원자성)
+      //      language는 timezone으로부터 도출 (Asia/Seoul → ko, 그 외 → en)
       const newUser = await tx.users.create({
         data: {
           email: g.email,
           displayName: g.name,
-          language: 'ko', // TODO: 언어 감지해서 넣어주기
-          timezone: 'Asia/Seoul', // TODO: 타임존 감지해서 넣어주기
+          language: deriveLanguageFromTimezone(timezone),
+          timezone,
           oauthIdentities: {
             create: {
               provider: 'google',

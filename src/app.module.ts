@@ -22,6 +22,7 @@ import { CanvasModule } from './domain/canvas/canvas.module';
 import { DeviceModule } from './domain/device/device.module';
 import { FolderModule } from './domain/folder/folder.module';
 import { TaskModule } from './domain/task/task.module';
+import { UserModule } from './domain/user/user.module';
 import { CalendarLinkModule } from './features/calendar-link/calendar-link.module';
 import { OcrModule } from './features/ocr/ocr.module';
 import { PushNotificationModule } from './features/push-notification/push-notification.module';
@@ -51,6 +52,7 @@ import { PushNotificationModule } from './features/push-notification/push-notifi
     QueueModule,
     StorageModule,
     AuthModule,
+    UserModule,
     DeviceModule,
     FolderModule,
     TaskModule,
