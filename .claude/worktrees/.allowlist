@@ -2,3 +2,4 @@
 # .active 활성 상태에서도 이 prefix로 시작하는 편집은 통과.
 # 기본 화이트리스트(스크립트 내장): $HOME/.claude/, $HOME/.config/, $CLAUDE_PROJECT_DIR/.claude/
 # 추가가 필요하면 아래에 한 줄당 추가 (예: /etc/foo/, /opt/bar/).
+/home/zegiha/projects/fanesis-server/fanesis-server.code-workspace
