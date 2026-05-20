@@ -21,6 +21,7 @@ import { StorageModule } from './core/storage/storage.module';
 import { CanvasModule } from './domain/canvas/canvas.module';
 import { DeviceModule } from './domain/device/device.module';
 import { FolderModule } from './domain/folder/folder.module';
+import { RoutineModule } from './domain/routine/routine.module';
 import { TaskModule } from './domain/task/task.module';
 import { UserModule } from './domain/user/user.module';
 import { CalendarLinkModule } from './features/calendar-link/calendar-link.module';
@@ -56,6 +57,7 @@ import { PushNotificationModule } from './features/push-notification/push-notifi
     DeviceModule,
     FolderModule,
     TaskModule,
+    RoutineModule,
     CanvasModule,
     CalendarLinkModule,
     PushNotificationModule,
