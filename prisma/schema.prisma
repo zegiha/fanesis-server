@@ -21,6 +21,7 @@ model Users {
   oauthIdentities      OAuthIdentities[]
   folders              Folders[]
   tasks                Tasks[]
+  routines             Routines[]
   calendarIntegrations CalendarIntegrations[]
   devices              Devices[]
   canvases             Canvases[]
@@ -231,4 +232,34 @@ model TaskCanvasSources {
   canvas     Canvases? @relation(fields: [canvasUuid], references: [uuid], onDelete: SetNull)
 
   @@map("task_canvas_sources")
+}
+
+enum RoutineRepeatKind {
+  day_of_week
+  week
+  day
+}
+
+/// lineageUuid: 같은 논리적 routine의 시간순 버전 그룹 ID.
+/// 신규 routine은 DB가 gen_random_uuid()로 자체 발급, "수정" 의도의 후속 버전은 client가 이전 routine의 lineageUuid를 전달.
+/// soft delete: deletedAt이 NULL이 아니면 client가 occurrence 시각과 비교해 렌더링 여부를 판단한다. 서버는 deleted 여부와 무관하게 항상 반환.
+model Routines {
+  uuid           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userUuid       String            @map("user_uuid") @db.Uuid
+  lineageUuid    String            @default(dbgenerated("gen_random_uuid()")) @map("lineage_uuid") @db.Uuid
+  title          String
+  repeatKind     RoutineRepeatKind @map("repeat_kind")
+  repeatWeekdays Int[]             @map("repeat_weekdays") @db.SmallInt
+  repeatInterval Int?              @map("repeat_interval")
+  anchorDate     DateTime          @map("anchor_date") @db.Date
+  startTime      DateTime          @map("start_time") @db.Time(6)
+  durationSec    Int               @map("duration_sec")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  user           Users             @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+
+  @@index([userUuid], map: "idx_routines_user")
+  @@index([userUuid, lineageUuid], map: "idx_routines_user_lineage")
+  @@map("routines")
 }
