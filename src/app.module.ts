@@ -26,6 +26,7 @@ import { TaskModule } from './domain/task/task.module';
 import { TermsModule } from './domain/terms/terms.module';
 import { UserModule } from './domain/user/user.module';
 import { CalendarLinkModule } from './features/calendar-link/calendar-link.module';
+import { FocusModule } from './features/focus/focus.module';
 import { OcrModule } from './features/ocr/ocr.module';
 import { PushNotificationModule } from './features/push-notification/push-notification.module';
 
@@ -62,6 +63,7 @@ import { PushNotificationModule } from './features/push-notification/push-notifi
     CanvasModule,
     TermsModule,
     CalendarLinkModule,
+    FocusModule,
     PushNotificationModule,
     OcrModule,
   ],
