@@ -11,12 +11,18 @@ import { CurrentUser } from '@/core/auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '@/core/auth/decorators/current-user.decorator';
 import { UserResponseDto } from '@/core/auth/dto/response/user-response.dto';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import { UpdateTimezoneDto } from './dto/update-timezone.dto';
 import { UserService } from './user.service';
 
 @ApiTags('user')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequiredTermsGuard)
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}

@@ -23,13 +23,19 @@ import { ErrorCode } from '@/common/exceptions/error-codes';
 import { CurrentUser } from '@/core/auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '@/core/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import { CreateRoutineDto } from './dto/create-routine.dto';
 import { RoutineResponseDto } from './dto/response/routine-response.dto';
 import { RoutineService } from './routine.service';
 
 @ApiTags('routine')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequiredTermsGuard)
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('routines')
 export class RoutineController {
   constructor(private readonly routineService: RoutineService) {}

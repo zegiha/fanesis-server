@@ -26,6 +26,7 @@ import { ErrorCode } from '@/common/exceptions/error-codes';
 import { CurrentUser } from '@/core/auth/decorators/current-user.decorator';
 import type { CurrentUserType } from '@/core/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@/core/auth/guards/jwt-auth.guard';
+import { RequiredTermsGuard } from '@/domain/terms/guards/required-terms.guard';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { ByDateTaskQueryDto } from './dto/query/by-date-task-query.dto';
 import { PaginatedTaskResponseDto } from './dto/response/paginated-task-response.dto';
@@ -35,7 +36,12 @@ import { TaskService } from './task.service';
 
 @ApiTags('task')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RequiredTermsGuard)
+@ApiErrorResponse({
+  status: 403,
+  errorCode: ErrorCode.REQUIRED_TERMS_NOT_AGREED,
+  description: '필수 약관 미동의 — 응답 body에 missingTerms 배열 포함',
+})
 @Controller('tasks')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}

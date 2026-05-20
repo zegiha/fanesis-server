@@ -15,6 +15,8 @@ import { ErrorCode } from './error-codes';
  * AllExceptionsFilter는 AppException 인스턴스를 감지해 응답 body에 errorCode를 포함시킨다.
  */
 export class AppException extends HttpException {
+  extras?: Record<string, unknown>;
+
   constructor(
     public readonly errorCode: ErrorCode,
     message: string,

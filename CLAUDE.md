@@ -51,7 +51,7 @@ src/
 - `throw new HttpException(...)` / `BadRequestException(...)` 직접 사용 금지. (ValidationPipe 자동 400 제외)
 - 새 에러 추가 절차(error-codes 등록 → exceptions 클래스 → 컨트롤러 `@ApiErrorResponse`): → [`nestjs-conventions/SKILL.md` §2](./.claude/skills/nestjs-conventions/SKILL.md)
 
-응답 body 스펙은 §6 참조 (변경 금지).
+응답 body 스펙은 §6 참조. 필터 본문 변경은 핵심 동작(응답 매핑·로그 분기·표준 키 보장)을 유지하는 선에서 허용한다.
 
 ---
 
@@ -343,35 +343,47 @@ CREATE INDEX idx_sub_events_subscription ON subscription_events(subscription_uui
 CREATE INDEX idx_sub_events_user_kind ON subscription_events(user_uuid, kind);
 ```
 
-### 5.10 `terms` / `terms_agreements`
-약관 버전 + 동의 이력 · append-only · 현재 상태는 `DISTINCT ON (kind) ... ORDER BY agreed_at DESC` · IP/UA는 분쟁 시 증거(정보통신망법)
+### 5.10 `terms` / `terms_contents` / `terms_agreements`
+약관 버전 + 다국어 본문(terms_contents) + 동의 이력 · append-only · 현재 상태는 `DISTINCT ON (kind) ... ORDER BY version DESC` · IP/UA는 분쟁 시 증거(정보통신망법)
+
+- `terms_kind`: `service` / `privacy` / `marketing` (age_14 제거)
+- `version`: INTEGER (양의 정수, 운영자가 수동 부여)
+- `content` 컬럼은 `terms`에 없음 — 다국어 별도 테이블 `terms_contents`로 이관
+- 삭제 cascade: `terms_contents`, `terms_agreements` 모두 `ON DELETE CASCADE`
 
 ```sql
-CREATE DOMAIN terms_kind AS TEXT
-  CHECK (VALUE IN ('service', 'privacy', 'marketing', 'age_14'));
+CREATE TYPE "TermsKind" AS ENUM ('service', 'privacy', 'marketing');
 
 CREATE TABLE terms (
-  uuid          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  kind          terms_kind NOT NULL,
-  version       TEXT NOT NULL,
-  is_required   BOOLEAN NOT NULL,
-  content       TEXT,
-  effective_at  TIMESTAMPTZ NOT NULL,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  uuid         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  kind         "TermsKind" NOT NULL,
+  version      INTEGER NOT NULL CHECK (version > 0),
+  is_required  BOOLEAN NOT NULL,
+  effective_at TIMESTAMPTZ NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (kind, version)
+);
+CREATE INDEX idx_terms_kind_version ON terms(kind, version DESC);
+
+CREATE TABLE terms_contents (
+  terms_uuid UUID NOT NULL REFERENCES terms(uuid) ON DELETE CASCADE,
+  language   "Language" NOT NULL,
+  content    TEXT NOT NULL CHECK (length(content) > 0),
+  PRIMARY KEY (terms_uuid, language)
 );
 
 CREATE TABLE terms_agreements (
-  uuid          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_uuid     UUID NOT NULL REFERENCES users(uuid) ON DELETE CASCADE,
-  terms_uuid    UUID NOT NULL REFERENCES terms(uuid),
-  agreed        BOOLEAN NOT NULL,
-  agreed_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  ip_address    INET,
-  user_agent    TEXT
+  uuid       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_uuid  UUID NOT NULL REFERENCES users(uuid) ON DELETE CASCADE,
+  terms_uuid UUID NOT NULL REFERENCES terms(uuid) ON DELETE CASCADE,
+  agreed     BOOLEAN NOT NULL,
+  agreed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ip_address INET,
+  user_agent TEXT
 );
 CREATE INDEX idx_terms_agreements_user ON terms_agreements(user_uuid);
 CREATE INDEX idx_terms_agreements_terms ON terms_agreements(terms_uuid);
+CREATE INDEX idx_terms_agreements_user_agreed_at ON terms_agreements(user_uuid, agreed_at DESC);
 ```
 
 ### 5.11 `calendar_integrations`
@@ -489,7 +501,7 @@ CREATE INDEX idx_task_canvas_sources_canvas ON task_canvas_sources(canvas_uuid) 
 
 ## 6. 글로벌 예외 필터 (참고)
 
-[`src/common/filters/all-exceptions.filter.ts`](src/common/filters/all-exceptions.filter.ts) — 변경 금지. 핵심 동작:
+[`src/common/filters/all-exceptions.filter.ts`](src/common/filters/all-exceptions.filter.ts) — 핵심 동작(응답 매핑·로그 분기·표준 키 보장)은 유지한다. `AppException`의 `extras` 슬롯 spread는 허용하되, **표준 키(`statusCode`/`message`/`error`/`errorCode`/`timestamp`/`path`)는 항상 extras에 우선**한다.
 
 ```ts
 @Catch()
@@ -498,8 +510,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 1. HttpException이면 statusCode/message/error 추출
     // 2. 그 외는 500 + "Internal server error" 마스킹
     // 3. AppException이면 body.errorCode = exception.errorCode 추가
-    // 4. statusCode >= 500 → logger.error(stack), 그 외 → logger.warn
-    // 5. httpAdapter.reply(ctx.getResponse(), body, statusCode)
+    // 4. AppException.extras가 있으면 body에 spread (단 표준 키는 절대 덮어쓰지 못함)
+    // 5. statusCode >= 500 → logger.error(stack), 그 외 → logger.warn
+    // 6. httpAdapter.reply(ctx.getResponse(), body, statusCode)
   }
 }
 ```
@@ -507,6 +520,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 응답 body 형태:
 ```ts
 {
+  ...extras,             // AppException.extras (선택). 표준 키는 보호됨.
   statusCode: number,
   message: string | string[],
   error: string,
@@ -515,6 +529,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
   path: string,
 }
 ```
+
+`extras` 활용 예: `RequiredTermsNotAgreedException`이 `extras = { missingTerms: [{ uuid, kind, version }] }`로 미동의 약관 목록을 응답 body에 함께 첨부한다.
 
 main.ts의 `attachGlobalErrorResponses`가 모든 Swagger operation에 400/401/500을 자동 첨부하므로 컨트롤러 데코레이터 작성 시 중복 선언 금지.
 

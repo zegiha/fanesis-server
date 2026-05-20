@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TermsKind } from '@/generated/prisma/enums';
 
 export class ErrorResponseDto {
   @ApiProperty({ description: 'HTTP 상태 코드', example: 400 })
@@ -26,6 +27,32 @@ export class ErrorResponseDto {
     required: false,
   })
   errorCode?: string;
+
+  @ApiProperty({
+    description:
+      '필수 약관 미동의 시 미동의 약관 목록 (REQUIRED_TERMS_NOT_AGREED 에러 시만 포함)',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        uuid: { type: 'string', format: 'uuid' },
+        kind: {
+          type: 'string',
+          enum: [TermsKind.service, TermsKind.privacy, TermsKind.marketing],
+        },
+        version: { type: 'integer', example: 1 },
+      },
+    },
+    required: false,
+    example: [
+      {
+        uuid: '0193abcd-ef01-7000-a000-000000000001',
+        kind: 'service',
+        version: 1,
+      },
+    ],
+  })
+  missingTerms?: Array<{ uuid: string; kind: TermsKind; version: number }>;
 
   @ApiProperty({
     description: '에러 발생 시각 (ISO 8601)',
