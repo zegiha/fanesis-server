@@ -6,6 +6,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { AppleLoginDto } from './dto/apple-login.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { AuthResponseDto } from './dto/response/auth-response.dto';
@@ -31,6 +32,26 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: '유효하지 않은 Google ID 토큰' })
   googleLogin(@Body() dto: GoogleLoginDto): Promise<AuthResponseDto> {
     return this.auth.loginWithGoogle(dto.idToken, dto.timezone);
+  }
+
+  @Post('apple/login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Apple 로그인',
+    description:
+      'Swift 클라이언트에서 Apple Sign In으로 받은 identityToken을 검증하고, ' +
+      '신규 유저면 가입 처리 후 자체 JWT 토큰을 발급한다. ' +
+      'email과 fullName은 첫 로그인 시에만 Apple SDK가 제공하므로 이 때만 전송한다.',
+  })
+  @ApiOkResponse({
+    description: '로그인/가입 성공. 유저 정보와 토큰을 반환',
+    type: AuthResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: '유효하지 않은 Apple identity token',
+  })
+  appleLogin(@Body() dto: AppleLoginDto): Promise<AuthResponseDto> {
+    return this.auth.loginWithApple(dto);
   }
 
   @Post('refresh')

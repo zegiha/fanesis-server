@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './core/auth/auth.module';
 import apnsConfig from './core/config/apns.config';
 import appConfig from './core/config/app.config';
+import appleConfig from './core/config/apple.config';
 import databaseConfig from './core/config/database.config';
 import googleConfig from './core/config/google.config';
 import googleCalendarConfig from './core/config/google-calendar.config';
@@ -22,6 +23,7 @@ import { CanvasModule } from './domain/canvas/canvas.module';
 import { DeviceModule } from './domain/device/device.module';
 import { FolderModule } from './domain/folder/folder.module';
 import { RoutineModule } from './domain/routine/routine.module';
+import { SubscriptionModule } from './domain/subscription/subscription.module';
 import { TaskModule } from './domain/task/task.module';
 import { TermsModule } from './domain/terms/terms.module';
 import { UserModule } from './domain/user/user.module';
@@ -44,6 +46,7 @@ import { PushNotificationModule } from './features/push-notification/push-notifi
         apnsConfig,
         storageConfig,
         googleVisionConfig,
+        appleConfig,
       ],
       validate,
       cache: true,
@@ -62,6 +65,7 @@ import { PushNotificationModule } from './features/push-notification/push-notifi
     RoutineModule,
     CanvasModule,
     TermsModule,
+    SubscriptionModule,
     CalendarLinkModule,
     FocusModule,
     PushNotificationModule,
