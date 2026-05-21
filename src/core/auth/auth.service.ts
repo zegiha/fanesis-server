@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { AppleAuthService } from './apple-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { JwtTokenService } from './jwt-token.service';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { Users } from '../../generated/prisma/client';
 import { deriveLanguageFromTimezone } from '@/common/utils/language-from-timezone';
+import { AppleLoginDto } from './dto/apple-login.dto';
 import { AuthResponseDto } from './dto/response/auth-response.dto';
 import { RefreshResponseDto } from './dto/response/refresh-response.dto';
 import { UserResponseDto } from './dto/response/user-response.dto';
@@ -12,6 +14,7 @@ import { UserResponseDto } from './dto/response/user-response.dto';
 export class AuthService {
   constructor(
     private readonly googleTokenService: GoogleAuthService,
+    private readonly appleTokenService: AppleAuthService,
     private readonly jwtTokenService: JwtTokenService,
     private readonly prisma: PrismaService,
   ) {}
@@ -69,6 +72,57 @@ export class AuthService {
     });
 
     // 3. 트랜잭션 밖에서 자체 JWT 발급 (DB 작업 아니므로 분리)
+    const tokens = await this.issueTokens(user);
+    return { user: UserResponseDto.fromEntity(user), ...tokens };
+  }
+
+  async loginWithApple(dto: AppleLoginDto): Promise<AuthResponseDto> {
+    const apple = await this.appleTokenService.verify(dto.identityToken);
+
+    // dto.email 우선 — Apple SDK가 첫 로그인 시 실제 이메일을 전달함
+    const effectiveEmail = dto.email ?? apple.email ?? null;
+
+    const { user } = await this.prisma.$transaction(async (tx) => {
+      const identity = await tx.oAuthIdentities.findUnique({
+        where: {
+          provider_providerUserId: {
+            provider: 'apple',
+            providerUserId: apple.sub,
+          },
+        },
+        include: { user: true },
+      });
+
+      if (identity) {
+        await tx.oAuthIdentities.update({
+          where: { uuid: identity.uuid },
+          data: {
+            lastUsedAt: new Date(),
+            providerEmail: effectiveEmail,
+          },
+        });
+        return { user: identity.user };
+      }
+
+      const newUser = await tx.users.create({
+        data: {
+          email: effectiveEmail,
+          displayName: dto.fullName ?? null,
+          language: deriveLanguageFromTimezone(dto.timezone),
+          timezone: dto.timezone,
+          oauthIdentities: {
+            create: {
+              provider: 'apple',
+              providerUserId: apple.sub,
+              providerEmail: effectiveEmail,
+            },
+          },
+        },
+      });
+
+      return { user: newUser };
+    });
+
     const tokens = await this.issueTokens(user);
     return { user: UserResponseDto.fromEntity(user), ...tokens };
   }

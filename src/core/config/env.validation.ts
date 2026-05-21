@@ -75,23 +75,15 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  APNS_KEY_ID: string = '';
+  APPLE_KEY_ID: string = '';
 
   @IsString()
   @IsOptional()
-  APNS_TEAM_ID: string = '';
+  APPLE_TEAM_ID: string = '';
 
   @IsString()
   @IsOptional()
-  APNS_PRIVATE_KEY: string = '';
-
-  @IsString()
-  @IsOptional()
-  APNS_BUNDLE_ID: string = '';
-
-  @IsString()
-  @IsOptional()
-  APNS_PRODUCTION: string = 'false';
+  APPLE_PRIVATE_KEY: string = '';
 
   @IsString()
   @IsOptional()
@@ -116,6 +108,19 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   GOOGLE_VISION_API_KEY: string = '';
+
+  @IsString()
+  @MinLength(1)
+  APPLE_BUNDLE_ID!: string;
+
+  @IsString()
+  @IsOptional()
+  APPLE_ENVIRONMENT: string = 'Sandbox';
+
+  // Apple Root CA - G3 (DER, base64 인코딩). Apple PKI 사이트에서 다운로드.
+  @IsString()
+  @IsOptional()
+  APPLE_ROOT_CA_G3: string = '';
 }
 
 export function validate(config: Record<string, unknown>) {

@@ -2,6 +2,16 @@ import { HttpStatus } from '@nestjs/common';
 import { AppException } from './app.exception';
 import { ErrorCode } from './error-codes';
 
+export class InvalidAppleTokenException extends AppException {
+  constructor() {
+    super(
+      ErrorCode.AUTH_INVALID_APPLE_TOKEN,
+      'Invalid Apple token',
+      HttpStatus.UNAUTHORIZED,
+    );
+  }
+}
+
 export class InvalidGoogleTokenException extends AppException {
   constructor() {
     super(
